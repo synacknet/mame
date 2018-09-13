@@ -2583,3 +2583,7 @@ void mcf5206e_device::device_start()
 {
 	init_cpu_coldfire();
 }
+
+#define M68000_WANT_GENERATED_SOURCE
+#include "cpu/m68000/m68kgen.hxx"
+#undef M68000_WANT_GENERATED_SOURCE

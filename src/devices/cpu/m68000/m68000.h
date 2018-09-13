@@ -335,7 +335,9 @@ protected:
 	virtual bool memory_translate(int space, int intention, offs_t &address) override;
 
 #include "m68kcpu.h"
-#include "m68kops.h"
+#define M68000_WANT_GENERATED_HEADER
+#include "../../emu/cpu/m68000/m68kgen.hxx"
+#undef M68000_WANT_GENERATED_HEADER
 #include "m68kfpu.hxx"
 #include "m68kmmu.h"
 };

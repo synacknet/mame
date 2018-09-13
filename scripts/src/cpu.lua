@@ -1635,17 +1635,21 @@ if (CPUS["M680X0"]~=null) then
 	files {
 		MAME_DIR .. "src/devices/cpu/m68000/m68kcpu.cpp",
 		MAME_DIR .. "src/devices/cpu/m68000/m68kcpu.h",
-		MAME_DIR .. "src/devices/cpu/m68000/m68kops.cpp",
-		MAME_DIR .. "src/devices/cpu/m68000/m68kops.h",
 		MAME_DIR .. "src/devices/cpu/m68000/m68000.h",
 		MAME_DIR .. "src/devices/cpu/m68000/m68kfpu.hxx",
-		--MAME_DIR .. "src/devices/cpu/m68000/m68kmake.cpp",
 		MAME_DIR .. "src/devices/cpu/m68000/m68kmmu.h",
-		--MAME_DIR .. "src/devices/cpu/m68000/m68k_in.cpp",
+	}
+	dependency {
+		{ MAME_DIR .. "src/devices/cpu/m68000/m68kcpu.cpp", GEN_DIR .. "emu/cpu/m68000/m68kgen.hxx" },
+	}
+	custombuildtask {
+		{ MAME_DIR .. "src/devices/cpu/m68000/m68k_in.lst" , GEN_DIR .. "emu/cpu/m68000/m68kgen.hxx", { MAME_DIR .. "src/devices/cpu/m68000/m68kmake.py" }, {"@echo Generating M6800x0 source file...", PYTHON .. " $(1) $(<) $(@)" } }
 	}
 end
 
 if (CPUS["M680X0"]~=null or _OPTIONS["with-tools"]) then
+	table.insert(disasm_custombuildtask, { MAME_DIR .. "src/devices/cpu/m68000/m68k_in.lst" , GEN_DIR .. "emu/cpu/m68000/m68kgen.hxx", { MAME_DIR .. "src/devices/cpu/m68000/m68kmake.py" }, {"@echo Generating M6800x0 source file...", PYTHON .. " $(1) $(<) $(@)" } })
+	table.insert(disasm_dependency, { MAME_DIR .. "src/devices/cpu/m68000/m68kdasm.cpp", GEN_DIR .. "emu/cpu/m68000/m68kgen.hxx" })
 	table.insert(disasm_files , MAME_DIR .. "src/devices/cpu/m68000/m68kdasm.cpp")
 	table.insert(disasm_files , MAME_DIR .. "src/devices/cpu/m68000/m68kdasm.h")
 end
