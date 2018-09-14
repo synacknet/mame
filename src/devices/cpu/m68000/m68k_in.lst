@@ -1655,7 +1655,7 @@ M68KMAKE_OP(asr, 8, s, .)
 	uint32_t res = src >> shift;
 
 	if(shift != 0)
-		m_remaining_cycles -= shift<<m_cyc_shift;
+		m_icount -= shift<<m_cyc_shift;
 
 	if(GET_MSB_8(src))
 		res |= m68ki_shift_8_table[shift];
@@ -1677,7 +1677,7 @@ M68KMAKE_OP(asr, 16, s, .)
 	uint32_t res = src >> shift;
 
 	if(shift != 0)
-		m_remaining_cycles -= shift<<m_cyc_shift;
+		m_icount -= shift<<m_cyc_shift;
 
 	if(GET_MSB_16(src))
 		res |= m68ki_shift_16_table[shift];
@@ -1699,7 +1699,7 @@ M68KMAKE_OP(asr, 32, s, .)
 	uint32_t res = src >> shift;
 
 	if(shift != 0)
-		m_remaining_cycles -= shift<<m_cyc_shift;
+		m_icount -= shift<<m_cyc_shift;
 
 	if(GET_MSB_32(src))
 		res |= m68ki_shift_32_table[shift];
@@ -1722,7 +1722,7 @@ M68KMAKE_OP(asr, 8, r, .)
 
 	if(shift != 0)
 	{
-		m_remaining_cycles -= shift<<m_cyc_shift;
+		m_icount -= shift<<m_cyc_shift;
 
 		if(shift < 8)
 		{
@@ -1774,7 +1774,7 @@ M68KMAKE_OP(asr, 16, r, .)
 
 	if(shift != 0)
 	{
-		m_remaining_cycles -= shift<<m_cyc_shift;
+		m_icount -= shift<<m_cyc_shift;
 
 		if(shift < 16)
 		{
@@ -1826,7 +1826,7 @@ M68KMAKE_OP(asr, 32, r, .)
 
 	if(shift != 0)
 	{
-		m_remaining_cycles -= shift<<m_cyc_shift;
+		m_icount -= shift<<m_cyc_shift;
 
 		if(shift < 32)
 		{
@@ -1895,7 +1895,7 @@ M68KMAKE_OP(asl, 8, s, .)
 	uint32_t res = MASK_OUT_ABOVE_8(src << shift);
 
 	if(shift != 0)
-		m_remaining_cycles -= shift<<m_cyc_shift;
+		m_icount -= shift<<m_cyc_shift;
 
 	*r_dst = MASK_OUT_BELOW_8(*r_dst) | res;
 
@@ -1915,7 +1915,7 @@ M68KMAKE_OP(asl, 16, s, .)
 	uint32_t res = MASK_OUT_ABOVE_16(src << shift);
 
 	if(shift != 0)
-		m_remaining_cycles -= shift<<m_cyc_shift;
+		m_icount -= shift<<m_cyc_shift;
 
 	*r_dst = MASK_OUT_BELOW_16(*r_dst) | res;
 
@@ -1935,7 +1935,7 @@ M68KMAKE_OP(asl, 32, s, .)
 	uint32_t res = MASK_OUT_ABOVE_32(src << shift);
 
 	if(shift != 0)
-		m_remaining_cycles -= shift<<m_cyc_shift;
+		m_icount -= shift<<m_cyc_shift;
 
 	*r_dst = res;
 
@@ -1956,7 +1956,7 @@ M68KMAKE_OP(asl, 8, r, .)
 
 	if(shift != 0)
 	{
-		m_remaining_cycles -= shift<<m_cyc_shift;
+		m_icount -= shift<<m_cyc_shift;
 
 		if(shift < 8)
 		{
@@ -1993,7 +1993,7 @@ M68KMAKE_OP(asl, 16, r, .)
 
 	if(shift != 0)
 	{
-		m_remaining_cycles -= shift<<m_cyc_shift;
+		m_icount -= shift<<m_cyc_shift;
 
 		if(shift < 16)
 		{
@@ -2030,7 +2030,7 @@ M68KMAKE_OP(asl, 32, r, .)
 
 	if(shift != 0)
 	{
-		m_remaining_cycles -= shift<<m_cyc_shift;
+		m_icount -= shift<<m_cyc_shift;
 
 		if(shift < 32)
 		{
@@ -2082,7 +2082,7 @@ M68KMAKE_OP(bcc, 8, ., .)
 		m68ki_branch_8(MASK_OUT_ABOVE_8(m_ir));
 		return;
 	}
-	m_remaining_cycles -= m_cyc_bcc_notake_b;
+	m_icount -= m_cyc_bcc_notake_b;
 }
 
 
@@ -2097,7 +2097,7 @@ M68KMAKE_OP(bcc, 16, ., .)
 		return;
 	}
 	m_pc += 2;
-	m_remaining_cycles -= m_cyc_bcc_notake_w;
+	m_icount -= m_cyc_bcc_notake_w;
 }
 
 
@@ -2124,7 +2124,7 @@ M68KMAKE_OP(bcc, 32, ., .)
 			m68ki_branch_8(MASK_OUT_ABOVE_8(m_ir));
 			return;
 		}
-		m_remaining_cycles -= m_cyc_bcc_notake_b;
+		m_icount -= m_cyc_bcc_notake_b;
 	}
 }
 
@@ -2963,8 +2963,8 @@ M68KMAKE_OP(bra, 8, ., .)
 {
 	m68ki_trace_t0();                  /* auto-disable (see m68kcpu.h) */
 	m68ki_branch_8(MASK_OUT_ABOVE_8(m_ir));
-	if(m_pc == m_ppc && m_remaining_cycles > 0)
-		m_remaining_cycles = 0;
+	if(m_pc == m_ppc && m_icount > 0)
+		m_icount = 0;
 }
 
 
@@ -2974,8 +2974,8 @@ M68KMAKE_OP(bra, 16, ., .)
 	m_pc -= 2;
 	m68ki_trace_t0();              /* auto-disable (see m68kcpu.h) */
 	m68ki_branch_16(offset);
-	if(m_pc == m_ppc && m_remaining_cycles > 0)
-		m_remaining_cycles = 0;
+	if(m_pc == m_ppc && m_icount > 0)
+		m_icount = 0;
 }
 
 
@@ -2987,16 +2987,16 @@ M68KMAKE_OP(bra, 32, ., .)
 		m_pc -= 4;
 		m68ki_trace_t0();              /* auto-disable (see m68kcpu.h) */
 		m68ki_branch_32(offset);
-		if(m_pc == m_ppc && m_remaining_cycles > 0)
-			m_remaining_cycles = 0;
+		if(m_pc == m_ppc && m_icount > 0)
+			m_icount = 0;
 		return;
 	}
 	else
 	{
 		m68ki_trace_t0();                  /* auto-disable (see m68kcpu.h) */
 		m68ki_branch_8(MASK_OUT_ABOVE_8(m_ir));
-		if(m_pc == m_ppc && m_remaining_cycles > 0)
-			m_remaining_cycles = 0;
+		if(m_pc == m_ppc && m_icount > 0)
+			m_icount = 0;
 	}
 }
 
@@ -3145,7 +3145,7 @@ M68KMAKE_OP(cas, 8, ., .)
 			*compare = MASK_OUT_BELOW_8(*compare) | dest;
 		else
 		{
-			m_remaining_cycles -= 3;
+			m_icount -= 3;
 			m68ki_write_8(ea, MASK_OUT_ABOVE_8(REG_D()[(word2 >> 6) & 7]));
 		}
 		return;
@@ -3174,7 +3174,7 @@ M68KMAKE_OP(cas, 16, ., .)
 			*compare = MASK_OUT_BELOW_16(*compare) | dest;
 		else
 		{
-			m_remaining_cycles -= 3;
+			m_icount -= 3;
 			m68ki_write_16(ea, MASK_OUT_ABOVE_16(REG_D()[(word2 >> 6) & 7]));
 		}
 		return;
@@ -3203,7 +3203,7 @@ M68KMAKE_OP(cas, 32, ., .)
 			*compare = dest;
 		else
 		{
-			m_remaining_cycles -= 3;
+			m_icount -= 3;
 			m68ki_write_32(ea, REG_D()[(word2 >> 6) & 7]);
 		}
 		return;
@@ -3243,7 +3243,7 @@ M68KMAKE_OP(cas2, 16, ., .)
 
 			if(COND_EQ())
 			{
-				m_remaining_cycles -= 3;
+				m_icount -= 3;
 				m68ki_write_16(ea1, REG_D()[(word2 >> 22) & 7]);
 				m68ki_write_16(ea2, REG_D()[(word2 >> 6) & 7]);
 				return;
@@ -3288,7 +3288,7 @@ M68KMAKE_OP(cas2, 32, ., .)
 
 			if(COND_EQ())
 			{
-				m_remaining_cycles -= 3;
+				m_icount -= 3;
 				m68ki_write_32(ea1, REG_D()[(word2 >> 22) & 7]);
 				m68ki_write_32(ea2, REG_D()[(word2 >> 6) & 7]);
 				return;
@@ -4299,11 +4299,11 @@ M68KMAKE_OP(dbf, 16, ., .)
 		m_pc -= 2;
 		m68ki_trace_t0();              /* auto-disable (see m68kcpu.h) */
 		m68ki_branch_16(offset);
-		m_remaining_cycles -= m_cyc_dbcc_f_noexp;
+		m_icount -= m_cyc_dbcc_f_noexp;
 		return;
 	}
 	m_pc += 2;
-	m_remaining_cycles -= m_cyc_dbcc_f_exp;
+	m_icount -= m_cyc_dbcc_f_exp;
 }
 
 
@@ -4321,11 +4321,11 @@ M68KMAKE_OP(dbcc, 16, ., .)
 			m_pc -= 2;
 			m68ki_trace_t0();              /* auto-disable (see m68kcpu.h) */
 			m68ki_branch_16(offset);
-			m_remaining_cycles -= m_cyc_dbcc_f_noexp;
+			m_icount -= m_cyc_dbcc_f_noexp;
 			return;
 		}
 		m_pc += 2;
-		m_remaining_cycles -= m_cyc_dbcc_f_exp;
+		m_icount -= m_cyc_dbcc_f_exp;
 		return;
 	}
 	m_pc += 2;
@@ -4853,8 +4853,8 @@ M68KMAKE_OP(jmp, 32, ., .)
 {
 	m68ki_jump(M68KMAKE_GET_EA_AY_32);
 	m68ki_trace_t0();                  /* auto-disable (see m68kcpu.h) */
-	if(m_pc == m_ppc && m_remaining_cycles > 0)
-		m_remaining_cycles = 0;
+	if(m_pc == m_ppc && m_icount > 0)
+		m_icount = 0;
 }
 
 
@@ -4927,7 +4927,7 @@ M68KMAKE_OP(lsr, 8, s, .)
 	uint32_t res = src >> shift;
 
 	if(shift != 0)
-		m_remaining_cycles -= shift<<m_cyc_shift;
+		m_icount -= shift<<m_cyc_shift;
 
 	*r_dst = MASK_OUT_BELOW_8(*r_dst) | res;
 
@@ -4946,7 +4946,7 @@ M68KMAKE_OP(lsr, 16, s, .)
 	uint32_t res = src >> shift;
 
 	if(shift != 0)
-		m_remaining_cycles -= shift<<m_cyc_shift;
+		m_icount -= shift<<m_cyc_shift;
 
 	*r_dst = MASK_OUT_BELOW_16(*r_dst) | res;
 
@@ -4965,7 +4965,7 @@ M68KMAKE_OP(lsr, 32, s, .)
 	uint32_t res = src >> shift;
 
 	if(shift != 0)
-		m_remaining_cycles -= shift<<m_cyc_shift;
+		m_icount -= shift<<m_cyc_shift;
 
 	*r_dst = res;
 
@@ -4985,7 +4985,7 @@ M68KMAKE_OP(lsr, 8, r, .)
 
 	if(shift != 0)
 	{
-		m_remaining_cycles -= shift<<m_cyc_shift;
+		m_icount -= shift<<m_cyc_shift;
 
 		if(shift <= 8)
 		{
@@ -5022,7 +5022,7 @@ M68KMAKE_OP(lsr, 16, r, .)
 
 	if(shift != 0)
 	{
-		m_remaining_cycles -= shift<<m_cyc_shift;
+		m_icount -= shift<<m_cyc_shift;
 
 		if(shift <= 16)
 		{
@@ -5059,7 +5059,7 @@ M68KMAKE_OP(lsr, 32, r, .)
 
 	if(shift != 0)
 	{
-		m_remaining_cycles -= shift<<m_cyc_shift;
+		m_icount -= shift<<m_cyc_shift;
 
 		if(shift < 32)
 		{
@@ -5109,7 +5109,7 @@ M68KMAKE_OP(lsl, 8, s, .)
 	uint32_t res = MASK_OUT_ABOVE_8(src << shift);
 
 	if(shift != 0)
-		m_remaining_cycles -= shift<<m_cyc_shift;
+		m_icount -= shift<<m_cyc_shift;
 
 	*r_dst = MASK_OUT_BELOW_8(*r_dst) | res;
 
@@ -5128,7 +5128,7 @@ M68KMAKE_OP(lsl, 16, s, .)
 	uint32_t res = MASK_OUT_ABOVE_16(src << shift);
 
 	if(shift != 0)
-		m_remaining_cycles -= shift<<m_cyc_shift;
+		m_icount -= shift<<m_cyc_shift;
 
 	*r_dst = MASK_OUT_BELOW_16(*r_dst) | res;
 
@@ -5147,7 +5147,7 @@ M68KMAKE_OP(lsl, 32, s, .)
 	uint32_t res = MASK_OUT_ABOVE_32(src << shift);
 
 	if(shift != 0)
-		m_remaining_cycles -= shift<<m_cyc_shift;
+		m_icount -= shift<<m_cyc_shift;
 
 	*r_dst = res;
 
@@ -5167,7 +5167,7 @@ M68KMAKE_OP(lsl, 8, r, .)
 
 	if(shift != 0)
 	{
-		m_remaining_cycles -= shift<<m_cyc_shift;
+		m_icount -= shift<<m_cyc_shift;
 
 		if(shift <= 8)
 		{
@@ -5204,7 +5204,7 @@ M68KMAKE_OP(lsl, 16, r, .)
 
 	if(shift != 0)
 	{
-		m_remaining_cycles -= shift<<m_cyc_shift;
+		m_icount -= shift<<m_cyc_shift;
 
 		if(shift <= 16)
 		{
@@ -5241,7 +5241,7 @@ M68KMAKE_OP(lsl, 32, r, .)
 
 	if(shift != 0)
 	{
-		m_remaining_cycles -= shift<<m_cyc_shift;
+		m_icount -= shift<<m_cyc_shift;
 
 		if(shift < 32)
 		{
@@ -6862,7 +6862,7 @@ M68KMAKE_OP(movem, 16, re, pd)
 		}
 	AY() = ea;
 
-	m_remaining_cycles -= count<<m_cyc_movem_w;
+	m_icount -= count<<m_cyc_movem_w;
 }
 
 
@@ -6881,7 +6881,7 @@ M68KMAKE_OP(movem, 16, re, .)
 			count++;
 		}
 
-	m_remaining_cycles -= count<<m_cyc_movem_w;
+	m_icount -= count<<m_cyc_movem_w;
 }
 
 
@@ -6902,7 +6902,7 @@ M68KMAKE_OP(movem, 32, re, pd)
 		}
 	AY() = ea;
 
-	m_remaining_cycles -= count<<m_cyc_movem_l;
+	m_icount -= count<<m_cyc_movem_l;
 }
 
 
@@ -6921,7 +6921,7 @@ M68KMAKE_OP(movem, 32, re, .)
 			count++;
 		}
 
-	m_remaining_cycles -= count<<m_cyc_movem_l;
+	m_icount -= count<<m_cyc_movem_l;
 }
 
 
@@ -6941,7 +6941,7 @@ M68KMAKE_OP(movem, 16, er, pi)
 		}
 	AY() = ea;
 
-	m_remaining_cycles -= count<<m_cyc_movem_w;
+	m_icount -= count<<m_cyc_movem_w;
 }
 
 
@@ -6960,7 +6960,7 @@ M68KMAKE_OP(movem, 16, er, pcdi)
 			count++;
 		}
 
-	m_remaining_cycles -= count<<m_cyc_movem_w;
+	m_icount -= count<<m_cyc_movem_w;
 }
 
 
@@ -6979,7 +6979,7 @@ M68KMAKE_OP(movem, 16, er, pcix)
 			count++;
 		}
 
-	m_remaining_cycles -= count<<m_cyc_movem_w;
+	m_icount -= count<<m_cyc_movem_w;
 }
 
 
@@ -6998,7 +6998,7 @@ M68KMAKE_OP(movem, 16, er, .)
 			count++;
 		}
 
-	m_remaining_cycles -= count<<m_cyc_movem_w;
+	m_icount -= count<<m_cyc_movem_w;
 }
 
 
@@ -7018,7 +7018,7 @@ M68KMAKE_OP(movem, 32, er, pi)
 		}
 	AY() = ea;
 
-	m_remaining_cycles -= count<<m_cyc_movem_l;
+	m_icount -= count<<m_cyc_movem_l;
 }
 
 
@@ -7037,7 +7037,7 @@ M68KMAKE_OP(movem, 32, er, pcdi)
 			count++;
 		}
 
-	m_remaining_cycles -= count<<m_cyc_movem_l;
+	m_icount -= count<<m_cyc_movem_l;
 }
 
 
@@ -7056,7 +7056,7 @@ M68KMAKE_OP(movem, 32, er, pcix)
 			count++;
 		}
 
-	m_remaining_cycles -= count<<m_cyc_movem_l;
+	m_icount -= count<<m_cyc_movem_l;
 }
 
 
@@ -7075,7 +7075,7 @@ M68KMAKE_OP(movem, 32, er, .)
 			count++;
 		}
 
-	m_remaining_cycles -= count<<m_cyc_movem_l;
+	m_icount -= count<<m_cyc_movem_l;
 }
 
 
@@ -7138,13 +7138,13 @@ M68KMAKE_OP(moves, 8, ., .)
 			{
 				REG_A()[(word2 >> 12) & 7] = MAKE_INT_8(m68ki_read_8_fc(ea, m_sfc));
 				if(CPU_TYPE_IS_020_VARIANT())
-					m_remaining_cycles -= 2;
+					m_icount -= 2;
 				return;
 			}
 			/* Memory to data register */
 			REG_D()[(word2 >> 12) & 7] = MASK_OUT_BELOW_8(REG_D()[(word2 >> 12) & 7]) | m68ki_read_8_fc(ea, m_sfc);
 			if(CPU_TYPE_IS_020_VARIANT())
-				m_remaining_cycles -= 2;
+				m_icount -= 2;
 			return;
 		}
 		m68ki_exception_privilege_violation();
@@ -7173,13 +7173,13 @@ M68KMAKE_OP(moves, 16, ., .)
 			{
 				REG_A()[(word2 >> 12) & 7] = MAKE_INT_16(m68ki_read_16_fc(ea, m_sfc));
 				if(CPU_TYPE_IS_020_VARIANT())
-					m_remaining_cycles -= 2;
+					m_icount -= 2;
 				return;
 			}
 			/* Memory to data register */
 			REG_D()[(word2 >> 12) & 7] = MASK_OUT_BELOW_16(REG_D()[(word2 >> 12) & 7]) | m68ki_read_16_fc(ea, m_sfc);
 			if(CPU_TYPE_IS_020_VARIANT())
-				m_remaining_cycles -= 2;
+				m_icount -= 2;
 			return;
 		}
 		m68ki_exception_privilege_violation();
@@ -7203,13 +7203,13 @@ M68KMAKE_OP(moves, 32, ., .)
 			{
 				m68ki_write_32_fc(ea, m_dfc, REG_DA()[(word2 >> 12) & 15]);
 				if(CPU_TYPE_IS_020_VARIANT())
-					m_remaining_cycles -= 2;
+					m_icount -= 2;
 				return;
 			}
 			/* Memory to register */
 			REG_DA()[(word2 >> 12) & 15] = m68ki_read_32_fc(ea, m_sfc);
 			if(CPU_TYPE_IS_020_VARIANT())
-				m_remaining_cycles -= 2;
+				m_icount -= 2;
 			return;
 		}
 		m68ki_exception_privilege_violation();
@@ -8086,7 +8086,7 @@ M68KMAKE_OP(reset, 0, ., .)
 	{
 		if (!m_reset_instr_callback.isnull())
 			(m_reset_instr_callback)(1);
-		m_remaining_cycles -= m_cyc_reset;
+		m_icount -= m_cyc_reset;
 		return;
 	}
 	m68ki_exception_privilege_violation();
@@ -8102,7 +8102,7 @@ M68KMAKE_OP(ror, 8, s, .)
 	uint32_t res = ROR_8(src, shift);
 
 	if(orig_shift != 0)
-		m_remaining_cycles -= orig_shift<<m_cyc_shift;
+		m_icount -= orig_shift<<m_cyc_shift;
 
 	*r_dst = MASK_OUT_BELOW_8(*r_dst) | res;
 
@@ -8121,7 +8121,7 @@ M68KMAKE_OP(ror, 16, s, .)
 	uint32_t res = ROR_16(src, shift);
 
 	if(shift != 0)
-		m_remaining_cycles -= shift<<m_cyc_shift;
+		m_icount -= shift<<m_cyc_shift;
 
 	*r_dst = MASK_OUT_BELOW_16(*r_dst) | res;
 
@@ -8140,7 +8140,7 @@ M68KMAKE_OP(ror, 32, s, .)
 	uint32_t res = ROR_32(src, shift);
 
 	if(shift != 0)
-		m_remaining_cycles -= shift<<m_cyc_shift;
+		m_icount -= shift<<m_cyc_shift;
 
 	*r_dst = res;
 
@@ -8161,7 +8161,7 @@ M68KMAKE_OP(ror, 8, r, .)
 
 	if(orig_shift != 0)
 	{
-		m_remaining_cycles -= orig_shift<<m_cyc_shift;
+		m_icount -= orig_shift<<m_cyc_shift;
 
 		*r_dst = MASK_OUT_BELOW_8(*r_dst) | res;
 		m_c_flag = src << (8-((shift-1)&7));
@@ -8188,7 +8188,7 @@ M68KMAKE_OP(ror, 16, r, .)
 
 	if(orig_shift != 0)
 	{
-		m_remaining_cycles -= orig_shift<<m_cyc_shift;
+		m_icount -= orig_shift<<m_cyc_shift;
 
 		*r_dst = MASK_OUT_BELOW_16(*r_dst) | res;
 		m_c_flag = (src >> ((shift - 1) & 15)) << 8;
@@ -8215,7 +8215,7 @@ M68KMAKE_OP(ror, 32, r, .)
 
 	if(orig_shift != 0)
 	{
-		m_remaining_cycles -= orig_shift<<m_cyc_shift;
+		m_icount -= orig_shift<<m_cyc_shift;
 
 		*r_dst = res;
 		m_c_flag = (src >> ((shift - 1) & 31)) << 8;
@@ -8256,7 +8256,7 @@ M68KMAKE_OP(rol, 8, s, .)
 	uint32_t res = ROL_8(src, shift);
 
 	if(orig_shift != 0)
-		m_remaining_cycles -= orig_shift<<m_cyc_shift;
+		m_icount -= orig_shift<<m_cyc_shift;
 
 	*r_dst = MASK_OUT_BELOW_8(*r_dst) | res;
 
@@ -8275,7 +8275,7 @@ M68KMAKE_OP(rol, 16, s, .)
 	uint32_t res = ROL_16(src, shift);
 
 	if(shift != 0)
-		m_remaining_cycles -= shift<<m_cyc_shift;
+		m_icount -= shift<<m_cyc_shift;
 
 	*r_dst = MASK_OUT_BELOW_16(*r_dst) | res;
 
@@ -8294,7 +8294,7 @@ M68KMAKE_OP(rol, 32, s, .)
 	uint32_t res = ROL_32(src, shift);
 
 	if(shift != 0)
-		m_remaining_cycles -= shift<<m_cyc_shift;
+		m_icount -= shift<<m_cyc_shift;
 
 	*r_dst = res;
 
@@ -8315,7 +8315,7 @@ M68KMAKE_OP(rol, 8, r, .)
 
 	if(orig_shift != 0)
 	{
-		m_remaining_cycles -= orig_shift<<m_cyc_shift;
+		m_icount -= orig_shift<<m_cyc_shift;
 
 		if(shift != 0)
 		{
@@ -8350,7 +8350,7 @@ M68KMAKE_OP(rol, 16, r, .)
 
 	if(orig_shift != 0)
 	{
-		m_remaining_cycles -= orig_shift<<m_cyc_shift;
+		m_icount -= orig_shift<<m_cyc_shift;
 
 		if(shift != 0)
 		{
@@ -8385,7 +8385,7 @@ M68KMAKE_OP(rol, 32, r, .)
 
 	if(orig_shift != 0)
 	{
-		m_remaining_cycles -= orig_shift<<m_cyc_shift;
+		m_icount -= orig_shift<<m_cyc_shift;
 
 		*r_dst = res;
 
@@ -8426,7 +8426,7 @@ M68KMAKE_OP(roxr, 8, s, .)
 	uint32_t res = ROR_9(src | (XFLAG_1() << 8), shift);
 
 	if(shift != 0)
-		m_remaining_cycles -= shift<<m_cyc_shift;
+		m_icount -= shift<<m_cyc_shift;
 
 	m_c_flag = m_x_flag = res;
 	res = MASK_OUT_ABOVE_8(res);
@@ -8447,7 +8447,7 @@ M68KMAKE_OP(roxr, 16, s, .)
 	uint32_t res = ROR_17(src | (XFLAG_1() << 16), shift);
 
 	if(shift != 0)
-		m_remaining_cycles -= shift<<m_cyc_shift;
+		m_icount -= shift<<m_cyc_shift;
 
 	m_c_flag = m_x_flag = res >> 8;
 	res = MASK_OUT_ABOVE_16(res);
@@ -8468,7 +8468,7 @@ M68KMAKE_OP(roxr, 32, s, .)
 	uint64_t res   = src | (((uint64_t)XFLAG_1()) << 32);
 
 	if(shift != 0)
-		m_remaining_cycles -= shift<<m_cyc_shift;
+		m_icount -= shift<<m_cyc_shift;
 
 	res = ROR_33_64(res, shift);
 
@@ -8494,7 +8494,7 @@ M68KMAKE_OP(roxr, 8, r, .)
 		uint32_t src   = MASK_OUT_ABOVE_8(*r_dst);
 		uint32_t res   = ROR_9(src | (XFLAG_1() << 8), shift);
 
-		m_remaining_cycles -= orig_shift<<m_cyc_shift;
+		m_icount -= orig_shift<<m_cyc_shift;
 
 		m_c_flag = m_x_flag = res;
 		res = MASK_OUT_ABOVE_8(res);
@@ -8524,7 +8524,7 @@ M68KMAKE_OP(roxr, 16, r, .)
 		uint32_t src   = MASK_OUT_ABOVE_16(*r_dst);
 		uint32_t res   = ROR_17(src | (XFLAG_1() << 16), shift);
 
-		m_remaining_cycles -= orig_shift<<m_cyc_shift;
+		m_icount -= orig_shift<<m_cyc_shift;
 
 		m_c_flag = m_x_flag = res >> 8;
 		res = MASK_OUT_ABOVE_16(res);
@@ -8556,7 +8556,7 @@ M68KMAKE_OP(roxr, 32, r, .)
 
 		res = ROR_33_64(res, shift);
 
-		m_remaining_cycles -= orig_shift<<m_cyc_shift;
+		m_icount -= orig_shift<<m_cyc_shift;
 
 		m_c_flag = m_x_flag = res >> 24;
 		res = MASK_OUT_ABOVE_32(res);
@@ -8600,7 +8600,7 @@ M68KMAKE_OP(roxl, 8, s, .)
 	uint32_t res = ROL_9(src | (XFLAG_1() << 8), shift);
 
 	if(shift != 0)
-		m_remaining_cycles -= shift<<m_cyc_shift;
+		m_icount -= shift<<m_cyc_shift;
 
 	m_c_flag = m_x_flag = res;
 	res = MASK_OUT_ABOVE_8(res);
@@ -8621,7 +8621,7 @@ M68KMAKE_OP(roxl, 16, s, .)
 	uint32_t res = ROL_17(src | (XFLAG_1() << 16), shift);
 
 	if(shift != 0)
-		m_remaining_cycles -= shift<<m_cyc_shift;
+		m_icount -= shift<<m_cyc_shift;
 
 	m_c_flag = m_x_flag = res >> 8;
 	res = MASK_OUT_ABOVE_16(res);
@@ -8642,7 +8642,7 @@ M68KMAKE_OP(roxl, 32, s, .)
 	uint64_t res   = src | (((uint64_t)XFLAG_1()) << 32);
 
 	if(shift != 0)
-		m_remaining_cycles -= shift<<m_cyc_shift;
+		m_icount -= shift<<m_cyc_shift;
 
 	res = ROL_33_64(res, shift);
 
@@ -8669,7 +8669,7 @@ M68KMAKE_OP(roxl, 8, r, .)
 		uint32_t src   = MASK_OUT_ABOVE_8(*r_dst);
 		uint32_t res   = ROL_9(src | (XFLAG_1() << 8), shift);
 
-		m_remaining_cycles -= orig_shift<<m_cyc_shift;
+		m_icount -= orig_shift<<m_cyc_shift;
 
 		m_c_flag = m_x_flag = res;
 		res = MASK_OUT_ABOVE_8(res);
@@ -8699,7 +8699,7 @@ M68KMAKE_OP(roxl, 16, r, .)
 		uint32_t src   = MASK_OUT_ABOVE_16(*r_dst);
 		uint32_t res   = ROL_17(src | (XFLAG_1() << 16), shift);
 
-		m_remaining_cycles -= orig_shift<<m_cyc_shift;
+		m_icount -= orig_shift<<m_cyc_shift;
 
 		m_c_flag = m_x_flag = res >> 8;
 		res = MASK_OUT_ABOVE_16(res);
@@ -8731,7 +8731,7 @@ M68KMAKE_OP(roxl, 32, r, .)
 
 		res = ROL_33_64(res, shift);
 
-		m_remaining_cycles -= orig_shift<<m_cyc_shift;
+		m_icount -= orig_shift<<m_cyc_shift;
 
 		m_c_flag = m_x_flag = res >> 24;
 		res = MASK_OUT_ABOVE_32(res);
@@ -9163,7 +9163,7 @@ M68KMAKE_OP(scc, 8, ., d)
 	if(M68KMAKE_CC)
 	{
 		DY() |= 0xff;
-		m_remaining_cycles -= m_cyc_scc_r_true;
+		m_icount -= m_cyc_scc_r_true;
 		return;
 	}
 	DY() &= 0xffffff00;
@@ -9184,7 +9184,7 @@ M68KMAKE_OP(stop, 0, ., .)
 		m68ki_trace_t0();              /* auto-disable (see m68kcpu.h) */
 		m_stopped |= STOP_LEVEL_STOP;
 		m68ki_set_sr(new_sr);
-		m_remaining_cycles = 0;
+		m_icount = 0;
 		return;
 	}
 	m68ki_exception_privilege_violation();

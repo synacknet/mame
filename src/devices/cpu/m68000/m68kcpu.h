@@ -815,7 +815,7 @@ inline uint32_t m68ki_get_ea_ix(uint32_t An)
 
 	/* Full extension format */
 
-	m_remaining_cycles -= m68ki_ea_idx_cycle_table[extension&0x3f];
+	m_icount -= m68ki_ea_idx_cycle_table[extension&0x3f];
 
 	/* Check if base register is present */
 	if(BIT_7(extension))                /* BS */
@@ -1396,7 +1396,7 @@ inline void m68ki_exception_trap(uint32_t vector)
 	m68ki_jump_vector(vector);
 
 	/* Use up some clock cycles */
-	m_remaining_cycles -= m_cyc_exception[vector];
+	m_icount -= m_cyc_exception[vector];
 }
 
 /* Trap#n stacks a 0 frame but behaves like group2 otherwise */
@@ -1407,7 +1407,7 @@ inline void m68ki_exception_trapN(uint32_t vector)
 	m68ki_jump_vector(vector);
 
 	/* Use up some clock cycles */
-	m_remaining_cycles -= m_cyc_exception[vector];
+	m_icount -= m_cyc_exception[vector];
 }
 
 /* Exception for trace mode */
@@ -1432,7 +1432,7 @@ inline void m68ki_exception_trace()
 	m_stopped &= ~STOP_LEVEL_STOP;
 
 	/* Use up some clock cycles */
-	m_remaining_cycles -= m_cyc_exception[EXCEPTION_TRACE];
+	m_icount -= m_cyc_exception[EXCEPTION_TRACE];
 }
 
 /* Exception for privilege violation */
@@ -1449,7 +1449,7 @@ inline void m68ki_exception_privilege_violation()
 	m68ki_jump_vector(EXCEPTION_PRIVILEGE_VIOLATION);
 
 	/* Use up some clock cycles and undo the instruction's cycles */
-	m_remaining_cycles -= m_cyc_exception[EXCEPTION_PRIVILEGE_VIOLATION] - m_cyc_instruction[m_ir];
+	m_icount -= m_cyc_exception[EXCEPTION_PRIVILEGE_VIOLATION] - m_cyc_instruction[m_ir];
 }
 
 /* Exception for A-Line instructions */
@@ -1462,7 +1462,7 @@ inline void m68ki_exception_1010()
 	m68ki_jump_vector(EXCEPTION_1010);
 
 	/* Use up some clock cycles and undo the instruction's cycles */
-	m_remaining_cycles -= m_cyc_exception[EXCEPTION_1010] - m_cyc_instruction[m_ir];
+	m_icount -= m_cyc_exception[EXCEPTION_1010] - m_cyc_instruction[m_ir];
 }
 
 /* Exception for F-Line instructions */
@@ -1475,7 +1475,7 @@ inline void m68ki_exception_1111()
 	m68ki_jump_vector(EXCEPTION_1111);
 
 	/* Use up some clock cycles and undo the instruction's cycles */
-	m_remaining_cycles -= m_cyc_exception[EXCEPTION_1111] - m_cyc_instruction[m_ir];
+	m_icount -= m_cyc_exception[EXCEPTION_1111] - m_cyc_instruction[m_ir];
 }
 
 /* Exception for illegal instructions */
@@ -1494,7 +1494,7 @@ inline void m68ki_exception_illegal()
 	m68ki_jump_vector(EXCEPTION_ILLEGAL_INSTRUCTION);
 
 	/* Use up some clock cycles and undo the instruction's cycles */
-	m_remaining_cycles -= m_cyc_exception[EXCEPTION_ILLEGAL_INSTRUCTION] - m_cyc_instruction[m_ir];
+	m_icount -= m_cyc_exception[EXCEPTION_ILLEGAL_INSTRUCTION] - m_cyc_instruction[m_ir];
 }
 
 /* Exception for format errror in RTE */
@@ -1505,7 +1505,7 @@ inline void m68ki_exception_format_error()
 	m68ki_jump_vector(EXCEPTION_FORMAT_ERROR);
 
 	/* Use up some clock cycles and undo the instruction's cycles */
-	m_remaining_cycles -= m_cyc_exception[EXCEPTION_FORMAT_ERROR] - m_cyc_instruction[m_ir];
+	m_icount -= m_cyc_exception[EXCEPTION_FORMAT_ERROR] - m_cyc_instruction[m_ir];
 }
 
 /* Exception for address error */
@@ -1550,7 +1550,7 @@ inline void m68ki_exception_address_error()
 	m_run_mode = RUN_MODE_BERR_AERR_RESET;
 
 	/* Use up some clock cycles and undo the instruction's cycles */
-	m_remaining_cycles -= m_cyc_exception[EXCEPTION_ADDRESS_ERROR] - m_cyc_instruction[m_ir];
+	m_icount -= m_cyc_exception[EXCEPTION_ADDRESS_ERROR] - m_cyc_instruction[m_ir];
 }
 
 

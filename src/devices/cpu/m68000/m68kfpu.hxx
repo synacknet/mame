@@ -1345,7 +1345,7 @@ void fpgen_rm_reg(uint16_t w2)
 
 				// handle it right here, the usual opmode bits aren't valid in the FMOVECR case
 				m_fpr[dst] = source;
-				m_remaining_cycles -= 4;
+				m_icount -= 4;
 				return;
 			}
 			default:    fatalerror("fmove_rm_reg: invalid source specifier %x at %08X\n", src, m_pc-4);
@@ -1364,7 +1364,7 @@ void fpgen_rm_reg(uint16_t w2)
 		{
 			m_fpr[dst] = source;
 			SET_CONDITION_CODES(m_fpr[dst]);
-			m_remaining_cycles -= 4;
+			m_icount -= 4;
 			break;
 		}
 		case 0x01:      // FINT
@@ -1385,14 +1385,14 @@ void fpgen_rm_reg(uint16_t w2)
 		{
 			m_fpr[dst] = floatx80_sqrt(source);
 			SET_CONDITION_CODES(m_fpr[dst]);
-			m_remaining_cycles -= 109;
+			m_icount -= 109;
 			break;
 		}
 		case 0x06:      // FLOGNP1
 		{
 			m_fpr[dst] = floatx80_flognp1 (source);
 			SET_CONDITION_CODES(m_fpr[dst]);
-			m_remaining_cycles -= 594; // for MC68881
+			m_icount -= 594; // for MC68881
 			break;
 		}
 		case 0x0e:      // FSIN
@@ -1400,7 +1400,7 @@ void fpgen_rm_reg(uint16_t w2)
 			m_fpr[dst] = source;
 			floatx80_fsin(m_fpr[dst]);
 			SET_CONDITION_CODES(m_fpr[dst]);
-			m_remaining_cycles -= 75;
+			m_icount -= 75;
 			break;
 		}
 		case 0x0f:      // FTAN
@@ -1408,28 +1408,28 @@ void fpgen_rm_reg(uint16_t w2)
 			m_fpr[dst] = source;
 			floatx80_ftan(m_fpr[dst]);
 			SET_CONDITION_CODES(m_fpr[dst]);
-			m_remaining_cycles -= 75;
+			m_icount -= 75;
 			break;
 		}
 		case 0x14:      // FLOGN
 		{
 			m_fpr[dst] = floatx80_flogn (source);
 			SET_CONDITION_CODES(m_fpr[dst]);
-			m_remaining_cycles -= 548; // for MC68881
+			m_icount -= 548; // for MC68881
 			break;
 		}
 		case 0x15:      // FLOG10
 		{
 			m_fpr[dst] = floatx80_flog10 (source);
 			SET_CONDITION_CODES(m_fpr[dst]);
-			m_remaining_cycles -= 604; // for MC68881
+			m_icount -= 604; // for MC68881
 			break;
 		}
 		case 0x16:      // FLOG2
 		{
 			m_fpr[dst] = floatx80_flog2 (source);
 			SET_CONDITION_CODES(m_fpr[dst]);
-			m_remaining_cycles -= 604; // for MC68881
+			m_icount -= 604; // for MC68881
 			break;
 		}
 		case 0x18:      // FABS
@@ -1437,7 +1437,7 @@ void fpgen_rm_reg(uint16_t w2)
 			m_fpr[dst] = source;
 			m_fpr[dst].high &= 0x7fff;
 			SET_CONDITION_CODES(m_fpr[dst]);
-			m_remaining_cycles -= 3;
+			m_icount -= 3;
 			break;
 		}
 		case 0x1a:      // FNEG
@@ -1445,7 +1445,7 @@ void fpgen_rm_reg(uint16_t w2)
 			m_fpr[dst] = source;
 			m_fpr[dst].high ^= 0x8000;
 			SET_CONDITION_CODES(m_fpr[dst]);
-			m_remaining_cycles -= 3;
+			m_icount -= 3;
 			break;
 		}
 		case 0x1d:      // FCOS
@@ -1453,7 +1453,7 @@ void fpgen_rm_reg(uint16_t w2)
 			m_fpr[dst] = source;
 			floatx80_fcos(m_fpr[dst]);
 			SET_CONDITION_CODES(m_fpr[dst]);
-			m_remaining_cycles -= 75;
+			m_icount -= 75;
 			break;
 		}
 		case 0x1e:      // FGETEXP
@@ -1464,27 +1464,27 @@ void fpgen_rm_reg(uint16_t w2)
 			temp2 -= 0x3fff;    // take off the bias
 			m_fpr[dst] = double_to_fx80((double)temp2);
 			SET_CONDITION_CODES(m_fpr[dst]);
-			m_remaining_cycles -= 6;
+			m_icount -= 6;
 			break;
 		}
 		case 0x20:      // FDIV
 		{
 			m_fpr[dst] = floatx80_div(m_fpr[dst], source);
-			m_remaining_cycles -= 43;
+			m_icount -= 43;
 			break;
 		}
 		case 0x22:      // FADD
 		{
 			m_fpr[dst] = floatx80_add(m_fpr[dst], source);
 			SET_CONDITION_CODES(m_fpr[dst]);
-			m_remaining_cycles -= 9;
+			m_icount -= 9;
 			break;
 		}
 		case 0x23:      // FMUL
 		{
 			m_fpr[dst] = floatx80_mul(m_fpr[dst], source);
 			SET_CONDITION_CODES(m_fpr[dst]);
-			m_remaining_cycles -= 11;
+			m_icount -= 11;
 			break;
 		}
 		case 0x24:      // FSGLDIV
@@ -1492,21 +1492,21 @@ void fpgen_rm_reg(uint16_t w2)
 			float32 a = floatx80_to_float32( m_fpr[dst] );
 			float32 b = floatx80_to_float32( source );
 			m_fpr[dst] = float32_to_floatx80( float32_div(a, b) );
-			m_remaining_cycles -= 43; //  // ? (value is from FDIV)
+			m_icount -= 43; //  // ? (value is from FDIV)
 			break;
 		}
 		case 0x25:      // FREM
 		{
 			m_fpr[dst] = floatx80_rem(m_fpr[dst], source);
 			SET_CONDITION_CODES(m_fpr[dst]);
-			m_remaining_cycles -= 43;   // guess
+			m_icount -= 43;   // guess
 			break;
 		}
 		case 0x26:      // FSCALE
 		{
 			m_fpr[dst] = floatx80_scale(m_fpr[dst], source);
 			SET_CONDITION_CODES(m_fpr[dst]);
-			m_remaining_cycles -= 46;   // (better?) guess
+			m_icount -= 46;   // (better?) guess
 			break;
 		}
 		case 0x27:      // FSGLMUL
@@ -1515,14 +1515,14 @@ void fpgen_rm_reg(uint16_t w2)
 			float32 b = floatx80_to_float32( source );
 			m_fpr[dst] = float32_to_floatx80( float32_mul(a, b) );
 			SET_CONDITION_CODES(m_fpr[dst]);
-			m_remaining_cycles -= 11; // ? (value is from FMUL)
+			m_icount -= 11; // ? (value is from FMUL)
 			break;
 		}
 		case 0x28:      // FSUB
 		{
 			m_fpr[dst] = floatx80_sub(m_fpr[dst], source);
 			SET_CONDITION_CODES(m_fpr[dst]);
-			m_remaining_cycles -= 9;
+			m_icount -= 9;
 			break;
 		}
 		case 0x38:      // FCMP
@@ -1530,7 +1530,7 @@ void fpgen_rm_reg(uint16_t w2)
 			floatx80 res;
 			res = floatx80_sub(m_fpr[dst], source);
 			SET_CONDITION_CODES(res);
-			m_remaining_cycles -= 7;
+			m_icount -= 7;
 			break;
 		}
 		case 0x3a:      // FTST
@@ -1538,7 +1538,7 @@ void fpgen_rm_reg(uint16_t w2)
 			floatx80 res;
 			res = source;
 			SET_CONDITION_CODES(res);
-			m_remaining_cycles -= 7;
+			m_icount -= 7;
 			break;
 		}
 
@@ -1615,7 +1615,7 @@ void fmove_reg_mem(uint16_t w2)
 		}
 	}
 
-	m_remaining_cycles -= 12;
+	m_icount -= 12;
 }
 
 void fmove_fpcr(uint16_t w2)
@@ -1715,7 +1715,7 @@ void fmove_fpcr(uint16_t w2)
 		}
 	}
 
-	m_remaining_cycles -= 10;
+	m_icount -= 10;
 }
 
 void fmovem(uint16_t w2)
@@ -1763,7 +1763,7 @@ void fmovem(uint16_t w2)
 								break;
 						}
 
-						m_remaining_cycles -= 2;
+						m_icount -= 2;
 					}
 				}
 				break;
@@ -1787,7 +1787,7 @@ void fmovem(uint16_t w2)
 								break;
 						}
 
-						m_remaining_cycles -= 2;
+						m_icount -= 2;
 					}
 				}
 				break;
@@ -1821,7 +1821,7 @@ void fmovem(uint16_t w2)
 								m_fpr[7-i] = READ_EA_FPE(ea);
 								break;
 						}
-						m_remaining_cycles -= 2;
+						m_icount -= 2;
 					}
 				}
 				break;
@@ -1838,7 +1838,7 @@ void fscc()
 	int condition = (int16_t)(OPER_I_16());
 
 	WRITE_EA_8(ea, TEST_CONDITION(condition) ? 0xff : 0);
-	m_remaining_cycles -= 7; // ???
+	m_icount -= 7; // ???
 }
 
 void fbcc16()
@@ -1855,7 +1855,7 @@ void fbcc16()
 		m68ki_branch_16(offset-2);
 	}
 
-	m_remaining_cycles -= 7;
+	m_icount -= 7;
 }
 
 void fbcc32()
@@ -1872,7 +1872,7 @@ void fbcc32()
 		m68ki_branch_32(offset-4);
 	}
 
-	m_remaining_cycles -= 7;
+	m_icount -= 7;
 }
 
 
