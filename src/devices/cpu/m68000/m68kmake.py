@@ -247,24 +247,10 @@ class Info:
         # first block skipped
         for i in range(1, len(blocks)):
             b = blocks[i]
-            if b.startswith('M68KMAKE_PROTOTYPE_HEADER\n\n'):
-                self.prototype_header = b[27:]
-            elif b.startswith('M68KMAKE_PROTOTYPE_FOOTER\n\n'):
-                self.prototype_footer = b[27:]
-            elif b.startswith('M68KMAKE_TABLE_HEADER\n\n'):
-                self.table_header = b[23:]
-            elif b.startswith('M68KMAKE_TABLE_FOOTER\n\n'):
-                self.table_footer = b[23:]
-            elif b.startswith('M68KMAKE_OPCODE_HANDLER_HEADER\n\n'):
-                self.opcode_handler_header = b[32:]
-            elif b.startswith('M68KMAKE_OPCODE_HANDLER_FOOTER\n\n'):
-                self.opcode_handler_footer = b[32:]
-            elif b.startswith('M68KMAKE_TABLE_BODY\n'):
+            if b.startswith('M68KMAKE_TABLE\n'):
                 self.handle_table_body(b[20:])
-            elif b.startswith('M68KMAKE_OPCODE_HANDLER_BODY\n\n'):
+            elif b.startswith('M68KMAKE_OPCODE_HANDLER\n\n'):
                 self.handle_opcode_handler_body(b[30:])
-            elif b.startswith('M68KMAKE_END\n\n'):
-                pass
 
     def handle_table_body(self, b):
         s1 = b[b.index('M68KMAKE_TABLE_START\n')+21:]
@@ -286,19 +272,15 @@ class Info:
 
     def save_header(self, f):
         f.write("#ifdef M68000_WANT_GENERATED_HEADER\n")
-        f.write(self.prototype_header)
         for h in self.opcode_handlers:
             f.write('void %s();\n' % h.function_name)
-        f.write(self.prototype_footer)
         f.write("#endif\n")
 
     def save_source(self, f):
         f.write("#ifdef M68000_WANT_GENERATED_SOURCE\n")
-        f.write(self.opcode_handler_header)
         for h in self.opcode_handlers:
             f.write('void m68000_base_device::%s()\n%s' % (h.function_name, h.body))
-        f.write(self.opcode_handler_footer)
-        f.write(self.table_header)
+        f.write("const m68000_base_device::opcode_handler_struct m68000_base_device::m68k_opcode_handler_table[] =\n{\n")
         order = list(range(len(self.opcode_handlers)))
         order.sort(key = lambda id: "%02d %04x %04x" % (self.opcode_handlers[id].bits, self.opcode_handlers[id].op_mask, self.opcode_handlers[id].op_value))
         for id in order:
@@ -309,7 +291,7 @@ class Info:
                     f.write(", ")
                 f.write("%3d" % (255 if oh.cycles[i] == None else oh.cycles[i]))
             f.write("}},\n")
-        f.write(self.table_footer)
+        f.write("\t{nullptr, 0, 0, {0, 0, 0, 0, 0}}\n};\n")
         f.write("#endif\n")
 
 def main(argv):
