@@ -31,7 +31,7 @@ static const char copyright_notice[] =
 
 // Generated data
 
-m68000_base_device::opcode_handler_ptr m68000_base_device::m68ki_instruction_jump_table[NUM_CPU_TYPES][0x10000]; /* opcode handler jump table */
+u16 m68000_base_device::m68ki_instruction_state_table[NUM_CPU_TYPES][0x10000]; /* opcode handler jump table */
 unsigned char m68000_base_device::m68ki_cycles[NUM_CPU_TYPES][0x10000]; /* Cycles used by CPU type */
 
 /* ======================================================================== */
@@ -814,7 +814,8 @@ void m68000_base_device::execute_run()
 				m_run_mode = RUN_MODE_NORMAL;
 				/* Read an instruction and call its handler */
 				m_ir = m68ki_read_imm_16();
-				(this->*m_jump_table[m_ir])();
+				u16 state = m_state_table[m_ir];
+				(this->*m68k_handler_table[state])();
 				m_icount -= m_cyc_instruction[m_ir];
 			}
 			else
@@ -836,7 +837,8 @@ void m68000_base_device::execute_run()
 
 				if (!m_mmu_tmp_buserror_occurred)
 				{
-					(this->*m_jump_table[m_ir])();
+					u16 state = m_state_table[m_ir];
+					(this->*m68k_handler_table[state])();
 					m_icount -= m_cyc_instruction[m_ir];
 				}
 
@@ -1618,7 +1620,7 @@ void m68000_base_device::init_cpu_m68000(void)
 
 	init16(*m_program, *m_oprogram);
 	m_sr_mask          = 0xa71f; /* T1 -- S  -- -- I2 I1 I0 -- -- -- X  N  Z  V  C  */
-	m_jump_table       = m68ki_instruction_jump_table[0];
+	m_state_table      = m68ki_instruction_state_table[0];
 	m_cyc_instruction  = m68ki_cycles[0];
 	m_cyc_exception    = m68ki_exception_cycle_table[0];
 	m_cyc_bcc_notake_b = -2;
@@ -1647,7 +1649,7 @@ void m68000_base_device::init_cpu_m68008(void)
 
 	init8(*m_program, *m_oprogram);
 	m_sr_mask          = 0xa71f; /* T1 -- S  -- -- I2 I1 I0 -- -- -- X  N  Z  V  C  */
-	m_jump_table       = m68ki_instruction_jump_table[0];
+	m_state_table      = m68ki_instruction_state_table[0];
 	m_cyc_instruction  = m68ki_cycles[0];
 	m_cyc_exception    = m68ki_exception_cycle_table[0];
 	m_cyc_bcc_notake_b = -2;
@@ -1674,7 +1676,7 @@ void m68000_base_device::init_cpu_m68010(void)
 
 	init16(*m_program, *m_oprogram);
 	m_sr_mask          = 0xa71f; /* T1 -- S  -- -- I2 I1 I0 -- -- -- X  N  Z  V  C  */
-	m_jump_table       = m68ki_instruction_jump_table[1];
+	m_state_table      = m68ki_instruction_state_table[1];
 	m_cyc_instruction  = m68ki_cycles[1];
 	m_cyc_exception    = m68ki_exception_cycle_table[1];
 	m_cyc_bcc_notake_b = -4;
@@ -1700,7 +1702,7 @@ void m68000_base_device::init_cpu_m68020(void)
 
 	init32(*m_program, *m_oprogram);
 	m_sr_mask          = 0xf71f; /* T1 T0 S  M  -- I2 I1 I0 -- -- -- X  N  Z  V  C  */
-	m_jump_table       = m68ki_instruction_jump_table[2];
+	m_state_table      = m68ki_instruction_state_table[2];
 	m_cyc_instruction  = m68ki_cycles[2];
 	m_cyc_exception    = m68ki_exception_cycle_table[2];
 	m_cyc_bcc_notake_b = -2;
@@ -1756,7 +1758,7 @@ void m68000_base_device::init_cpu_m68ec020(void)
 
 	init32(*m_program, *m_oprogram);
 	m_sr_mask          = 0xf71f; /* T1 T0 S  M  -- I2 I1 I0 -- -- -- X  N  Z  V  C  */
-	m_jump_table       = m68ki_instruction_jump_table[2];
+	m_state_table      = m68ki_instruction_state_table[2];
 	m_cyc_instruction  = m68ki_cycles[2];
 	m_cyc_exception    = m68ki_exception_cycle_table[2];
 	m_cyc_bcc_notake_b = -2;
@@ -1784,7 +1786,7 @@ void m68000_base_device::init_cpu_m68030(void)
 
 	init32mmu(*m_program, *m_oprogram);
 	m_sr_mask          = 0xf71f; /* T1 T0 S  M  -- I2 I1 I0 -- -- -- X  N  Z  V  C  */
-	m_jump_table       = m68ki_instruction_jump_table[3];
+	m_state_table      = m68ki_instruction_state_table[3];
 	m_cyc_instruction  = m68ki_cycles[3];
 	m_cyc_exception    = m68ki_exception_cycle_table[3];
 	m_cyc_bcc_notake_b = -2;
@@ -1813,7 +1815,7 @@ void m68000_base_device::init_cpu_m68ec030(void)
 
 	init32(*m_program, *m_oprogram);
 	m_sr_mask          = 0xf71f; /* T1 T0 S  M  -- I2 I1 I0 -- -- -- X  N  Z  V  C  */
-	m_jump_table       = m68ki_instruction_jump_table[3];
+	m_state_table      = m68ki_instruction_state_table[3];
 	m_cyc_instruction  = m68ki_cycles[3];
 	m_cyc_exception    = m68ki_exception_cycle_table[3];
 	m_cyc_bcc_notake_b = -2;
@@ -1842,7 +1844,7 @@ void m68000_base_device::init_cpu_m68040(void)
 
 	init32mmu(*m_program, *m_oprogram);
 	m_sr_mask          = 0xf71f; /* T1 T0 S  M  -- I2 I1 I0 -- -- -- X  N  Z  V  C  */
-	m_jump_table       = m68ki_instruction_jump_table[4];
+	m_state_table      = m68ki_instruction_state_table[4];
 	m_cyc_instruction  = m68ki_cycles[4];
 	m_cyc_exception    = m68ki_exception_cycle_table[4];
 	m_cyc_bcc_notake_b = -2;
@@ -1870,7 +1872,7 @@ void m68000_base_device::init_cpu_m68ec040(void)
 
 	init32(*m_program, *m_oprogram);
 	m_sr_mask          = 0xf71f; /* T1 T0 S  M  -- I2 I1 I0 -- -- -- X  N  Z  V  C  */
-	m_jump_table       = m68ki_instruction_jump_table[4];
+	m_state_table      = m68ki_instruction_state_table[4];
 	m_cyc_instruction  = m68ki_cycles[4];
 	m_cyc_exception    = m68ki_exception_cycle_table[4];
 	m_cyc_bcc_notake_b = -2;
@@ -1898,7 +1900,7 @@ void m68000_base_device::init_cpu_m68lc040(void)
 
 	init32mmu(*m_program, *m_oprogram);
 	m_sr_mask          = 0xf71f; /* T1 T0 S  M  -- I2 I1 I0 -- -- -- X  N  Z  V  C  */
-	m_jump_table       = m68ki_instruction_jump_table[4];
+	m_state_table      = m68ki_instruction_state_table[4];
 	m_cyc_instruction  = m68ki_cycles[4];
 	m_cyc_exception    = m68ki_exception_cycle_table[4];
 	m_cyc_bcc_notake_b = -2;
@@ -1933,7 +1935,7 @@ void m68000_base_device::init_cpu_fscpu32(void)
 
 	init32(*m_program, *m_oprogram);
 	m_sr_mask          = 0xf71f; /* T1 T0 S  M  -- I2 I1 I0 -- -- -- X  N  Z  V  C  */
-	m_jump_table       = m68ki_instruction_jump_table[5];
+	m_state_table      = m68ki_instruction_state_table[5];
 	m_cyc_instruction  = m68ki_cycles[5];
 	m_cyc_exception    = m68ki_exception_cycle_table[5];
 	m_cyc_bcc_notake_b = -2;
@@ -1960,7 +1962,7 @@ void m68000_base_device::init_cpu_coldfire(void)
 
 	init32(*m_program, *m_oprogram);
 	m_sr_mask          = 0xf71f; /* T1 T0 S  M  -- I2 I1 I0 -- -- -- X  N  Z  V  C  */
-	m_jump_table       = m68ki_instruction_jump_table[6];
+	m_state_table      = m68ki_instruction_state_table[6];
 	m_cyc_instruction  = m68ki_cycles[6];
 	m_cyc_exception    = m68ki_exception_cycle_table[6];
 	m_cyc_bcc_notake_b = -2;
@@ -2593,106 +2595,35 @@ void mcf5206e_device::device_start()
 #include "cpu/m68000/m68kgen.hxx"
 #undef M68000_WANT_GENERATED_SOURCE
 
-void m68000_base_device::m68ki_set_one(unsigned short opcode, const opcode_handler_struct *s)
+void m68000_base_device::m68ki_set_one(unsigned short opcode, u16 state, const opcode_handler_struct &s)
 {
 	for(int i=0; i<NUM_CPU_TYPES; i++)
-		if(s->cycles[i] != 0xff) {
-			m68ki_cycles[i][opcode] = s->cycles[i];
-			m68ki_instruction_jump_table[i][opcode] = s->opcode_handler;
+		if(s.cycles[i] != 0xff) {
+			m68ki_cycles[i][opcode] = s.cycles[i];
+			m68ki_instruction_state_table[i][opcode] = state;
 		}
 }
 
 void m68000_base_device::m68ki_build_opcode_table()
 {
-	const opcode_handler_struct *ostruct;
-	int i;
-	int j;
-	int k;
-
-	for(i = 0; i < 0x10000; i++)
+	for(int i = 0; i < 0x10000; i++)
 	{
 		/* default to illegal */
-		for(k=0;k<NUM_CPU_TYPES;k++)
+		for(int k=0;k<NUM_CPU_TYPES;k++)
 		{
-			m68ki_instruction_jump_table[k][i] = &m68000_base_device::m68k_op_illegal_0;
+			m68ki_instruction_state_table[k][i] = m68k_state_illegal;
 			m68ki_cycles[k][i] = 0;
 		}
 	}
 
-	ostruct = m68k_opcode_handler_table;
-	while(ostruct->mask != 0xff00)
+	for(u16 state = 0; m68k_opcode_table[state].mask; state++)
 	{
-		for(i = 0;i < 0x10000;i++)
-		{
-			if((i & ostruct->mask) == ostruct->match)
-				m68ki_set_one(i, ostruct);
-		}
-		ostruct++;
-	}
-	while(ostruct->mask == 0xff00)
-	{
-		for(i = 0;i <= 0xff;i++)
-			m68ki_set_one(ostruct->match | i, ostruct);
-		ostruct++;
-	}
-	while(ostruct->mask == 0xff20)
-	{
-		for(i = 0;i < 4;i++)
-		{
-			for(j = 0;j < 32;j++)
-			{
-				m68ki_set_one(ostruct->match | (i << 6) | j, ostruct);
-			}
-		}
-		ostruct++;
-	}
-	while(ostruct->mask == 0xf1f8)
-	{
-		for(i = 0;i < 8;i++)
-		{
-			for(j = 0;j < 8;j++)
-				m68ki_set_one(ostruct->match | (i << 9) | j, ostruct);
-		}
-		ostruct++;
-	}
-	while(ostruct->mask == 0xffd8)
-	{
-		for(i = 0;i < 2;i++)
-		{
-			for(j = 0;j < 8;j++)
-			{
-				m68ki_set_one(ostruct->match | (i << 5) | j, ostruct);
-			}
-		}
-		ostruct++;
-	}
-	while(ostruct->mask == 0xfff0)
-	{
-		for(i = 0;i <= 0x0f;i++)
-			m68ki_set_one(ostruct->match | i, ostruct);
-		ostruct++;
-	}
-	while(ostruct->mask == 0xf1ff)
-	{
-		for(i = 0;i <= 0x07;i++)
-			m68ki_set_one(ostruct->match | (i << 9), ostruct);
-		ostruct++;
-	}
-	while(ostruct->mask == 0xfff8)
-	{
-		for(i = 0;i <= 0x07;i++)
-			m68ki_set_one(ostruct->match | i, ostruct);
-		ostruct++;
-	}
-	while(ostruct->mask == 0xffff)
-	{
-		m68ki_set_one(ostruct->match, ostruct);
-		ostruct++;
-	}
-
-	// if we fell all the way through with a non-zero mask, the opcode table wasn't built properly
-	if (ostruct->mask != 0)
-	{
-		fatalerror("m68ki_build_opcode_table: unhandled opcode mask %x (match %x), m68k core will not function!\n", ostruct->mask, ostruct->match);
+		const auto &os = m68k_opcode_table[state];
+		u16 mask = os.mask;
+		u16 extraval = 0;
+		do {
+			m68ki_set_one(os.match | extraval, state, os);
+			extraval = ((extraval | mask) + 1) & ~mask;
+		} while(extraval);
 	}
 }
