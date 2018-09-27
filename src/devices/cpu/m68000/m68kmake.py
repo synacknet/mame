@@ -97,11 +97,120 @@ ea_info_table = {
     'i'    : [ 'I',      0x3f, 0x3c ],
 }
 
+class Var:
+    def __init__(self, name, params, id):
+        self.name = name
+        self.params = params
+        self.id = id
 
+class Body:
+    def __init__(self):
+        self.text = ''
+        self.vars = []
+        self.varh = {}
 
+    def append(self, line):
+        self.text += line + '\n'
+
+    def extract_subcall(self, pos):
+        start = pos
+        pos = pos + 1
+        while (self.text[pos] >= 'A' and self.text[pos] <= 'Z') or (self.text[pos] >= 'a' and self.text[pos] <= 'z') or (self.text[pos] >= '0' and self.text[pos] <= '9') or self.text[pos] == '_':
+            pos += 1
+        name = self.text[start+1:pos]
+        end = pos
+        while pos < len(self.text) and (self.text[pos] == ' ' or self.text[pos] == '\t'):
+            pos += 1
+        params = []
+        if self.text[pos] == '(':
+            while pos < len(self.text):
+                pos += 1
+                while pos < len(self.text) and (self.text[pos] == ' ' or self.text[pos] == '\t'):
+                    pos += 1
+                depth = 0
+                pstart = pos
+                while pos < len(self.text) and (depth != 0 or (self.text[pos] != ',' and self.text[pos] != ')')):
+                    if self.text[pos] == '(':
+                        depth += 1
+                    elif self.text[pos] == ')':
+                        depth -= 1
+                    pos += 1
+                pend = pos
+                while pend >= pstart and (self.text[pend-1] == ' ' or self.text[pend-1] == '\t'):
+                    pend -= 1
+                params.append(self.text[pstart:pend])
+                if self.text[pos] == ')':
+                    break
+            if pos < len(self.text):
+                pos += 1
+            if len(params) == 1 and params[0] == '':
+                params = []
+            var = Var(name, params, len(self.vars))
+            self.vars.append(var)
+            if name in self.varh:
+                self.varh[name].append(var)
+            else:
+                self.varh[name] = [var]
+            self.text = self.text[:start] + ('$%d$' % var.id) + self.text[pos:]
+        
+
+    def prepare(self):
+        pos = len(self.text) - 1
+        while pos >= 0 and (self.text[pos] == '\n' or self.text[pos] == '\r' or self.text[pos] == ' ' or self.text[pos] == '\t'):
+            pos -= 1
+        self.text = self.text[0:pos+1] + '\n'
+        pos = len(self.text)
+        while pos != -1:
+            pos = self.text.rfind('$', 0, pos)
+            if pos != -1:
+                self.extract_subcall(pos)
+        
+    def write(self, f):
+        f.write(self.text)
+
+    def replace_ea(self, variant):
+        l = self.text
+        l = l.replace('M68KMAKE_GET_EA_AY_8', 'EA_%s_8()' % variant)
+        l = l.replace('M68KMAKE_GET_EA_AY_16', 'EA_%s_16()' % variant)
+        l = l.replace('M68KMAKE_GET_EA_AY_32', 'EA_%s_32()' % variant)
+        l = l.replace('M68KMAKE_GET_OPER_AY_8', 'OPER_%s_8()' % variant)
+        l = l.replace('M68KMAKE_GET_OPER_AY_16', 'OPER_%s_16()' % variant)
+        l = l.replace('M68KMAKE_GET_OPER_AY_32', 'OPER_%s_32()' % variant)
+        self.text = l
+
+    def replace_cc(self, variant):
+        l = self.text
+        l = l.replace('M68KMAKE_CC', 'COND_%s()' % variant)
+        l = l.replace('M68KMAKE_NOT_CC', 'COND_NOT_%s()' % variant)
+        self.text = l
+
+    def subst(self, v, text):
+        self.text = self.text.replace('$%d$' % v.id, text)
+
+    def replace_change_state(self, info):
+        if 'change_state' in self.varh:
+            for v in self.varh['change_state']:
+                sname = info.get_state_function_name(v.params[0])
+                self.subst(v, 'do {\n\t%s();\n\treturn;\n} while(0)' % sname)
+
+        
+class State:
+    def __init__(self, entries):
+        self.name = entries[1]
+        self.cycles = [None] * CPU_COUNT
+        for i in range(2, len(entries)):
+            parts = entries[i].split(':')
+            cycles = int(parts[1])
+            for c in parts[0]:
+                cpu = cpu_names.index(c)
+                self.cycles[cpu] = cycles
+        self.body = Body()
+
+    def append(self, line):
+        self.body.append(line)
+        
 class Opcode:
-    def __init__(self, line):
-        entries = line.split()
+    def __init__(self, entries):
         self.op_value = int(entries[0], 16)
         self.op_mask = int(entries[1], 16)
         self.name = entries[2]
@@ -120,10 +229,10 @@ class Opcode:
                 cpu = cpu_names.index(c)
                 self.cycles[cpu] = cycles
                 self.priv[cpu] = priv
-        self.body = ''
+        self.body = Body()
 
     def append(self, line):
-        self.body += line + '\n'
+        self.body.append(line)
 
     def generate(self, handlers):
         if self.name == 'bcc' or self.name == 'scc' or self.name == 'dbcc' or self.name == 'trapcc':
@@ -165,8 +274,9 @@ class Opcode:
         bname = self.name[:-2]
         for cc in range(2, 16):
             op = copy.copy(self)
+            op.body = copy.copy(self.body)
             op.name = bname + cc_table_dn[cc]
-            op.body = self.body.replace('M68KMAKE_CC', 'COND_%s()' % cc_table_up[cc]).replace('M68KMAKE_NOT_CC', 'COND_NOT_%s()' % cc_table_up[cc])
+            op.body.replace_cc(cc_table_up[cc])
             op.op_mask |= 0x0f00
             op.op_value = (op.op_value & 0xf0ff) | (cc << 8)
             op.ea_variants(handlers)
@@ -204,18 +314,9 @@ class OpcodeHandler:
         for i in range(0, 16):
             if (self.op_mask & (1 << i)) != 0:
                 self.bits += 1
+        self.body = copy.copy(op.body)
         if ea_mode != 'none':
-            n = ea_info_table[ea_mode][0]
-            body = op.body
-            body = body.replace('M68KMAKE_GET_EA_AY_8', 'EA_%s_8()' % n)
-            body = body.replace('M68KMAKE_GET_EA_AY_16', 'EA_%s_16()' % n)
-            body = body.replace('M68KMAKE_GET_EA_AY_32', 'EA_%s_32()' % n)
-            body = body.replace('M68KMAKE_GET_OPER_AY_8', 'OPER_%s_8()' % n)
-            body = body.replace('M68KMAKE_GET_OPER_AY_16', 'OPER_%s_16()' % n)
-            body = body.replace('M68KMAKE_GET_OPER_AY_32', 'OPER_%s_32()' % n)
-            self.body = body
-        else:
-            self.body = op.body
+            self.body.replace_ea(ea_info_table[ea_mode][0])
 
 class Info:
     def __init__(self, path):
@@ -227,30 +328,58 @@ class Info:
             sys.exit(1)
 
         self.opcodes = []
-        cur_opcode = None
+        self.states = []
+        cur_block = None
         for line in f:
             line = line.rstrip()
             if line == '' or line[0] == ' ' or line[0] == '\t':
-                if cur_opcode != None:
-                    cur_opcode.append(line)
+                if cur_block != None:
+                    cur_block.append(line)
             elif line[0] != '#':
-                cur_opcode = Opcode(line)
-                self.opcodes.append(cur_opcode)
+                entries = line.split()
+                if entries[0] == "state":
+                    cur_block = State(entries)
+                    self.states.append(cur_block)
+                else:
+                    cur_block = Opcode(entries)
+                    self.opcodes.append(cur_block)
+
+        for op in self.opcodes:
+            op.body.prepare()
+        for st in self.states:
+            st.body.prepare()
 
         self.opcode_handlers = []
         for op in self.opcodes:
             op.generate(self.opcode_handlers)
 
+        for op in self.opcode_handlers:
+            op.body.replace_change_state(self)
+        for st in self.states:
+            st.body.replace_change_state(self)
+
+    def get_state_function_name(self, state):
+        return 'state_' + state
+
     def save_header(self, f):
         f.write("#ifdef M68000_WANT_GENERATED_HEADER\n")
         for h in self.opcode_handlers:
             f.write('void %s();\n' % h.function_name)
+        for s in self.states:
+            f.write('void %s();\n' % self.get_state_function_name(s.name))
         f.write("#endif\n")
 
     def save_source(self, f):
         f.write("#ifdef M68000_WANT_GENERATED_SOURCE\n")
         for h in self.opcode_handlers:
-            f.write('void m68000_base_device::%s()\n{\n%s}\n' % (h.function_name, h.body))
+            f.write('void m68000_base_device::%s()\n{\n' % h.function_name)
+            h.body.write(f)
+            f.write("}\n\n")
+
+        for s in self.states:
+            f.write('void m68000_base_device::%s()\n{\n' % self.get_state_function_name(s.name))
+            s.body.write(f)
+            f.write("}\n\n")
 
         order = list(range(len(self.opcode_handlers)))
         order.sort(key = lambda id: "%02d %04x %04x" % (self.opcode_handlers[id].bits, self.opcode_handlers[id].op_mask, self.opcode_handlers[id].op_value))
@@ -264,6 +393,8 @@ class Info:
             if oh.function_name == 'm68k_op_illegal_0':
                 illegal_id = nid
             nid += 1
+        for s in self.states:
+            f.write('\t&m68000_base_device::%s,\n' % self.get_state_function_name(s.name))
         f.write("};\n\n")
         f.write("const u16 m68000_base_device::m68k_state_illegal = %d;\n\n" % illegal_id)
         f.write("const m68000_base_device::opcode_handler_struct m68000_base_device::m68k_opcode_table[] =\n{\n\n")
