@@ -708,6 +708,15 @@ void mac_state::mac_adb_newaction(int state)
 						{
 							m_adb_buffer[i] = m_adb_buffer[i+1];
 						}
+
+						// If we're on the last byte to send,
+						// and the srq flag is set, set the interrupt
+						// bit to indicate srq.
+						if((m_adb_datasize == 0) && m_adb_srqflag)
+						{
+								m_adb_irq_pending = 1;
+								m_adb_srqflag = 0;
+						}
 					}
 
 				}
