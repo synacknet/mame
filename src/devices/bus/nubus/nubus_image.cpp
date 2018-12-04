@@ -11,6 +11,16 @@
 #include "emu.h"
 #include "nubus_image.h"
 #include "osdcore.h"
+#include "ui/ui.h"
+#include "ui/menu.h"
+#include "ui/filemngr.h"
+#include "ui/filesel.h"
+#include <unistd.h>
+#include <sys/fcntl.h>
+#include <sys/stat.h>
+
+extern "C" uint32_t SDL_GetMouseState(int* x, int* y);
+extern "C" int SDL_ShowCursor(int toggle);
 
 #define IMAGE_ROM_REGION    "image_rom"
 #define IMAGE_DISK0_TAG     "nb_disk"
@@ -185,14 +195,22 @@ void nubus_image_device::device_start()
 	nubus().install_device(slotspace+12, slotspace+15, read32_delegate(FUNC(nubus_image_device::file_data_r), this), write32_delegate(FUNC(nubus_image_device::file_data_w), this));
 	nubus().install_device(slotspace+16, slotspace+19, read32_delegate(FUNC(nubus_image_device::file_len_r), this), write32_delegate(FUNC(nubus_image_device::file_len_w), this));
 	nubus().install_device(slotspace+20, slotspace+147, read32_delegate(FUNC(nubus_image_device::file_name_r), this), write32_delegate(FUNC(nubus_image_device::file_name_w), this));
+	nubus().install_device(slotspace+148, slotspace+151, read32_delegate(FUNC(nubus_image_device::mousepos_r), this), write32_delegate(FUNC(nubus_image_device::mousepos_w), this));
 	nubus().install_device(superslotspace, superslotspace+((256*1024*1024)-1), read32_delegate(FUNC(nubus_image_device::image_super_r), this), write32_delegate(FUNC(nubus_image_device::image_super_w), this));
 
 	m_image = subdevice<messimg_disk_image_device>(IMAGE_DISK0_TAG);
 
 	filectx.curdir[0] = '.';
 	filectx.curdir[1] = '\0';
+	memset(filectx.filename, 0, sizeof(filectx.filename));
+	filectx.filenameoffset = 0;
 	filectx.dirp = nullptr;
 	filectx.fd = nullptr;
+
+	importctx.dir = ".";
+	importctx.file = "";
+	importctx.result = (int)ui::menu_file_selector::result::INVALID;
+	importctx.fd = nullptr;
 }
 
 //-------------------------------------------------
@@ -201,6 +219,27 @@ void nubus_image_device::device_start()
 
 void nubus_image_device::device_reset()
 {
+}
+
+WRITE32_MEMBER( nubus_image_device::mousepos_w )
+{
+}
+
+READ32_MEMBER( nubus_image_device::mousepos_r )
+{
+	int x, y;
+	uint32_t ret = 0;
+	SDL_ShowCursor(0);
+	SDL_GetMouseState(&x, &y);
+	/* Pin the cursor to the dimensions of the screen */
+	if(x > machine().device<screen_device>("screen")->visible_area().max_x) {
+		x = machine().device<screen_device>("screen")->visible_area().max_x;
+	}
+	if(y > machine().device<screen_device>("screen")->visible_area().max_y) {
+		y = machine().device<screen_device>("screen")->visible_area().max_y;
+	}
+	ret = ((x&0xffff) << 16) | (y&0xffff);
+	return ret;
 }
 
 WRITE32_MEMBER( nubus_image_device::image_status_w )
@@ -247,7 +286,6 @@ READ32_MEMBER( nubus_image_device::image_super_r )
 
 WRITE32_MEMBER( nubus_image_device::file_cmd_w )
 {
-//  data = ((data & 0xff) << 24) | ((data & 0xff00) << 8) | ((data & 0xff0000) >> 8) | ((data & 0xff000000) >> 24);
 	filectx.curcmd = data;
 	switch(data) {
 	case kFileCmdGetDir:
@@ -301,11 +339,42 @@ WRITE32_MEMBER( nubus_image_device::file_cmd_w )
 			filectx.bytecount = 0;
 		}
 		break;
+	case kFileCmdFileClose:
+		filectx.filenameoffset = 0;
+		if(filectx.fd) {
+			filectx.fd->flush();
+		}
+		filectx.fd = nullptr;
+		break;
+	case kFileCmdImportUI:
+		ui::menu::stack_reset(machine());
+		ui::menu::stack_push<ui::menu_file_selector>(dynamic_cast<mame_ui_manager&>(machine().ui()), machine().render().ui_container(), nullptr, importctx.dir, importctx.file, false, false, false, (ui::menu_file_selector::result&)importctx.result);
+		dynamic_cast<mame_ui_manager&>(machine().ui()).show_menu();
+		break;
+	case kFileCmdImportClose:
+		importctx.fd = nullptr;
+		break;
+	default:
+		printf("Unknown command: %x\n", data);
 	}
+
+	lastcmd = data;
 }
 
 READ32_MEMBER( nubus_image_device::file_cmd_r )
 {
+	if(lastcmd == kFileCmdImportUI) {
+		uint32_t ret = importctx.result;
+		if(importctx.result == (int)ui::menu_file_selector::result::FILE) {
+			importctx.name_offset = 0;
+			importctx.bytecount = 0;
+			if(osd_file::open(importctx.file, OPEN_FLAG_READ, importctx.fd, importctx.filelen) != osd_file::error::NONE) {
+				printf("Error opening %s\n", importctx.file.c_str());
+			}
+		}
+		importctx.result = (int)ui::menu_file_selector::result::INVALID;
+		return ret;
+	}
 	return 0;
 }
 
@@ -314,9 +383,8 @@ WRITE32_MEMBER( nubus_image_device::file_data_w )
 	std::uint32_t count = 4;
 	std::uint32_t actualcount = 0;
 
-	data = ((data & 0xff) << 24) | ((data & 0xff00) << 8) | ((data & 0xff0000) >> 8) | ((data & 0xff000000) >> 24);
 	if(filectx.fd) {
-		//data = big_endianize_int32(data);
+		data = big_endianize_int32(data);
 		if((filectx.bytecount + count) > filectx.filelen) count = filectx.filelen - filectx.bytecount;
 		filectx.fd->write(&data, filectx.bytecount, count, actualcount);
 		filectx.bytecount += actualcount;
@@ -329,13 +397,13 @@ WRITE32_MEMBER( nubus_image_device::file_data_w )
 
 READ32_MEMBER( nubus_image_device::file_data_r )
 {
-	if(filectx.fd) {
+	if(importctx.fd) {
 		std::uint32_t ret;
 		std::uint32_t actual = 0;
-		filectx.fd->read(&ret, filectx.bytecount, sizeof(ret), actual);
-		filectx.bytecount += actual;
+		importctx.fd->read(&ret, importctx.bytecount, sizeof(ret), actual);
+		importctx.bytecount += actual;
 		if(actual < sizeof(ret)) {
-			filectx.fd.reset();
+			importctx.fd.reset();
 		}
 		return big_endianize_int32(ret);
 	}
@@ -344,23 +412,30 @@ READ32_MEMBER( nubus_image_device::file_data_r )
 
 WRITE32_MEMBER( nubus_image_device::file_len_w )
 {
-	data = ((data & 0xff) << 24) | ((data & 0xff00) << 8) | ((data & 0xff0000) >> 8) | ((data & 0xff000000) >> 24);
-	filectx.filelen = big_endianize_int32(data);
+	filectx.filelen = data;
 }
 
 READ32_MEMBER( nubus_image_device::file_len_r )
 {
-	return filectx.filelen;
+	return importctx.filelen;
 }
 
 WRITE32_MEMBER( nubus_image_device::file_name_w )
 {
-	((uint32_t*)(filectx.filename))[offset] = big_endianize_int32(data);
+	filectx.filename[filectx.filenameoffset] = data;
+	filectx.filenameoffset++;
 }
 
 READ32_MEMBER( nubus_image_device::file_name_r )
 {
-	uint32_t ret;
-	ret = big_endianize_int32(((uint32_t*)(filectx.filename))[offset]);
+	uint32_t ret = 0;
+	if(lastcmd == 8) {
+		if(importctx.name_offset < (importctx.file.length() - importctx.dir.length() - 1)) {
+			ret = importctx.file.c_str()[importctx.name_offset + importctx.dir.length()+1];
+			importctx.name_offset++;
+		} else {
+			ret = 0; // nul
+		}
+	}
 	return ret;
 }

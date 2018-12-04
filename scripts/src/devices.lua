@@ -32,6 +32,7 @@ function devicesProject(_target, _subtarget)
 	includedirs {
 		MAME_DIR .. "src/osd",
 		MAME_DIR .. "src/emu",
+		MAME_DIR .. "src/frontend/mame",
 		MAME_DIR .. "src/devices",
 		MAME_DIR .. "src/mame", -- used for sound amiga
 		MAME_DIR .. "src/lib",

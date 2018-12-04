@@ -32,15 +32,31 @@ protected:
 		kFileCmdGetFirstListing,
 		kFileCmdGetNextListing,
 		kFileCmdGetFile,
-		kFileCmdPutFile
+		kFileCmdPutFile,
+		kFileCmdFileClose,
+		kFileCmdImportUI,
+		kFileCmdImportClose
 	};
 
 	struct nbfilectx
 	{
 		uint32_t curcmd;
 		uint8_t filename[128];
+		uint8_t filenameoffset;
 		uint8_t curdir[1024];
 		osd::directory::ptr dirp;
+		osd_file::ptr fd;
+		uint64_t filelen;
+		uint32_t bytecount;
+	};
+
+	struct nbimportctx
+	{
+		std::string dir;
+		std::string file;
+		uint8_t name_offset;
+		// hack to avoid ui includes
+		int result;
 		osd_file::ptr fd;
 		uint64_t filelen;
 		uint32_t bytecount;
@@ -56,6 +72,8 @@ protected:
 	virtual void device_add_mconfig(machine_config &config) override;
 	virtual const tiny_rom_entry *device_rom_region() const override;
 
+	DECLARE_READ32_MEMBER(mousepos_r);
+	DECLARE_WRITE32_MEMBER(mousepos_w);
 	DECLARE_READ32_MEMBER(image_status_r);
 	DECLARE_WRITE32_MEMBER(image_status_w);
 	DECLARE_READ32_MEMBER(image_r);
@@ -73,6 +91,8 @@ protected:
 
 	messimg_disk_image_device *m_image;
 	nbfilectx filectx;
+	nbimportctx importctx;
+	uint32_t lastcmd;
 };
 
 
