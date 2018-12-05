@@ -11,6 +11,7 @@
 #include "emu.h"
 #include "nubus_image.h"
 #include "osdcore.h"
+#include "uiinput.h"
 #include "ui/ui.h"
 #include "ui/menu.h"
 #include "ui/filemngr.h"
@@ -19,7 +20,6 @@
 #include <sys/fcntl.h>
 #include <sys/stat.h>
 
-extern "C" uint32_t SDL_GetMouseState(int* x, int* y);
 extern "C" int SDL_ShowCursor(int toggle);
 
 #define IMAGE_ROM_REGION    "image_rom"
@@ -227,18 +227,15 @@ WRITE32_MEMBER( nubus_image_device::mousepos_w )
 
 READ32_MEMBER( nubus_image_device::mousepos_r )
 {
-	int x, y;
-	uint32_t ret = 0;
+	std::int32_t x, y;
+	std::uint32_t ret = 0;
+	bool m_mouse_button;
+	// There doesn't seem to be a way to explicitly hide
+	// the cursor using mame classes.
 	SDL_ShowCursor(0);
-	SDL_GetMouseState(&x, &y);
-	/* Pin the cursor to the dimensions of the screen */
-	if(x > machine().device<screen_device>("screen")->visible_area().max_x) {
-		x = machine().device<screen_device>("screen")->visible_area().max_x;
-	}
-	if(y > machine().device<screen_device>("screen")->visible_area().max_y) {
-		y = machine().device<screen_device>("screen")->visible_area().max_y;
-	}
+	machine().ui_input().find_mouse(&x, &y, &m_mouse_button);
 	ret = ((x&0xffff) << 16) | (y&0xffff);
+
 	return ret;
 }
 
