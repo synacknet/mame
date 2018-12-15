@@ -20,6 +20,8 @@
 #include "machine/cuda.h"
 #include "bus/nubus/nubus.h"
 #include "bus/macpds/macpds.h"
+#include "bus/generic/slot.h"
+#include "bus/generic/carts.h"
 #include "machine/applefdc.h"
 #include "machine/ncr539x.h"
 #include "machine/ncr5380.h"
@@ -83,6 +85,7 @@ public:
 		m_fdc(*this, "fdc"),
 		m_mackbd(*this, MACKBD_TAG),
 		m_rtc(*this, "rtc"),
+		m_romsimm(*this, "cardslot"),
 		m_mouse0(*this, "MOUSE0"),
 		m_mouse1(*this, "MOUSE1"),
 		m_mouse2(*this, "MOUSE2"),
@@ -247,6 +250,8 @@ public:
 		MODEL_MAC_POWERMAC_8100
 	};
 
+	DECLARE_DEVICE_IMAGE_LOAD_MEMBER(romsimm);
+
 	model_t m_model;
 	int m_drive_select;
 
@@ -266,6 +271,7 @@ private:
 	required_device<applefdc_base_device> m_fdc;
 	optional_device<mackbd_device> m_mackbd;
 	optional_device<rtc3430042_device> m_rtc;
+	optional_device<generic_slot_device> m_romsimm;
 
 	required_ioport m_mouse0, m_mouse1, m_mouse2;
 	optional_ioport_array<7> m_keys;

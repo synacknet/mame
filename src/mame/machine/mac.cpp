@@ -412,8 +412,13 @@ void mac_state::set_memory_overlay(int overlay)
 		if (overlay)
 		{
 			/* ROM mirror */
-			memory_size = memregion("bootrom")->bytes();
-			memory_data = memregion("bootrom")->base();
+			if(m_romsimm && (m_romsimm->get_rom_size() > 0) ) {
+				memory_size = m_romsimm->get_rom_size();
+				memory_data = m_romsimm->get_rom_base();
+			} else {
+				memory_size = memregion("bootrom")->bytes();
+				memory_data = memregion("bootrom")->base();
+			}
 			is_rom = true;
 		}
 		else
@@ -493,6 +498,11 @@ READ32_MEMBER(mac_state::rom_switch_r)
 {
 	offs_t ROM_size = memregion("bootrom")->bytes();
 	uint32_t *ROM_data = (uint32_t *)memregion("bootrom")->base();
+
+	if(m_romsimm && (m_romsimm->get_rom_size() > 0)) {
+		ROM_size = m_romsimm->get_rom_size();
+		ROM_data = (uint32_t*)m_romsimm->get_rom_base();
+	}
 
 	// disable the overlay
 	if (m_overlay)
@@ -1867,6 +1877,9 @@ TIMER_CALLBACK_MEMBER(mac_state::mac_6015_tick)
 
 void mac_state::machine_start()
 {
+	if(m_romsimm && (m_romsimm->get_rom_size() > 0)) {
+		mac_install_memory(0x40000000, 0x407fffff, m_romsimm->get_rom_size(), m_romsimm->get_rom_base(), true, "bank1");
+	}
 	if (has_adb())
 	{
 		this->m_adb_timer = machine().scheduler().timer_alloc(timer_expired_delegate(FUNC(mac_state::mac_adb_tick),this));

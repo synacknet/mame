@@ -1549,6 +1549,20 @@ void mac_state::macclas2(machine_config &config)
 	m_egret->set_type(EGRET_341S0851);
 }
 
+DEVICE_IMAGE_LOAD_MEMBER(mac_state, romsimm)
+{
+	printf("Loading rom image %llu\n", image.length());
+	m_romsimm->rom_alloc(image.length(), GENERIC_ROM32_WIDTH, ENDIANNESS_BIG);
+	m_romsimm->common_load_rom(m_romsimm->get_rom_base(), image.length(), "rom");
+	// Endian macros do not seem to do anything, and the default
+	// is to load everything byteswapped.
+	for(uint32_t *i = (uint32_t*)m_romsimm->get_rom_base(); i < (uint32_t*)(m_romsimm->get_rom_base() + image.length()); i++) {
+		*i = ntohl(*i);
+	}
+	mac_install_memory(0x40800000, 0x40800000 + image.length()-1, image.length(), m_romsimm->get_rom_base(), true, "bootrom");
+	return image_init_result::PASS;
+}
+
 void mac_state::maciici(machine_config &config)
 {
 	macii(config, false, asc_device::asc_type::ASC, true, false, true);
@@ -1559,6 +1573,13 @@ void mac_state::maciici(machine_config &config)
 
 	MCFG_VIDEO_START_OVERRIDE(mac_state,macrbv)
 	MCFG_VIDEO_RESET_OVERRIDE(mac_state,macrbv)
+
+	device_t* device;
+	MCFG_GENERIC_CARTSLOT_ADD("cardslot", generic_plain_slot, "romsimm")
+	MCFG_GENERIC_EXTENSIONS("rom,bin")
+	MCFG_GENERIC_WIDTH(GENERIC_ROM32_WIDTH)
+	MCFG_GENERIC_ENDIAN(ENDIANNESS_BIG)
+	MCFG_GENERIC_LOAD(mac_state, romsimm)
 
 	SCREEN(config, m_screen, SCREEN_TYPE_RASTER);
 	m_screen->set_raw(25175000, 800, 0, 640, 525, 0, 480);
@@ -1893,7 +1914,7 @@ ROM_START( maciifx )
 ROM_END
 
 ROM_START( maciici )
-	ROM_REGION32_BE(0x80000, "bootrom", 0)
+	ROM_REGION32_BE(0x800000, "bootrom", 0)
 	ROM_LOAD32_BYTE( "341-0736.um12", 0x000000, 0x020000, CRC(7a1906e6) SHA1(3e39c80b52f40798502fcbdfc97b315545c4c4d3) )
 	ROM_LOAD32_BYTE( "341-0735.um11", 0x000001, 0x020000, CRC(a8942189) SHA1(be9f653cab04c304d7ee8d4ec312c23ff5d47efc) )
 	ROM_LOAD32_BYTE( "342-0734.um10", 0x000002, 0x020000, CRC(07f56402) SHA1(e11ca97181faf26cd0d05bd639d65998805c7822) )
