@@ -344,6 +344,7 @@ WRITE32_MEMBER( nubus_image_device::file_cmd_w )
 		filectx.fd = nullptr;
 		break;
 	case kFileCmdImportUI:
+		importctx.result = 0;
 		ui::menu::stack_reset(machine());
 		ui::menu::stack_push<ui::menu_file_selector>(dynamic_cast<mame_ui_manager&>(machine().ui()), machine().render().ui_container(), nullptr, importctx.dir, importctx.file, false, false, false, (ui::menu_file_selector::result&)importctx.result);
 		dynamic_cast<mame_ui_manager&>(machine().ui()).show_menu();
@@ -368,8 +369,9 @@ READ32_MEMBER( nubus_image_device::file_cmd_r )
 			if(osd_file::open(importctx.file, OPEN_FLAG_READ, importctx.fd, importctx.filelen) != osd_file::error::NONE) {
 				printf("Error opening %s\n", importctx.file.c_str());
 			}
+		} else if(!machine().ui().is_menu_active()) {
+			ret = 0xffffffff;
 		}
-		importctx.result = (int)ui::menu_file_selector::result::INVALID;
 		return ret;
 	}
 	return 0;
