@@ -78,6 +78,7 @@
 #include "bus/nubus/pds30_sigmalview.h"
 #include "bus/nubus/pds30_30hr.h"
 #include "bus/nubus/pds30_mc30.h"
+#include <arpa/inet.h>
 
 // 68000 PDS cards
 #include "bus/macpds/pds_tpdfpd.h"
@@ -1551,7 +1552,6 @@ void mac_state::macclas2(machine_config &config)
 
 DEVICE_IMAGE_LOAD_MEMBER(mac_state, romsimm)
 {
-	printf("Loading rom image %llu\n", image.length());
 	m_romsimm->rom_alloc(image.length(), GENERIC_ROM32_WIDTH, ENDIANNESS_BIG);
 	m_romsimm->common_load_rom(m_romsimm->get_rom_base(), image.length(), "rom");
 	// Endian macros do not seem to do anything, and the default
