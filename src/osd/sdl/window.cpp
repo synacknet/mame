@@ -113,6 +113,7 @@ bool sdl_osd_interface::window_init()
 	/* We may want to set a number of the hints SDL2 provides.
 	 * The code below will document which hints were set.
 	 */
+	/* These hints are never set */
 	const char * hints[] = { SDL_HINT_FRAMEBUFFER_ACCELERATION,
 			SDL_HINT_RENDER_DRIVER, SDL_HINT_RENDER_OPENGL_SHADERS,
 			SDL_HINT_RENDER_SCALE_QUALITY,
@@ -832,6 +833,7 @@ int sdl_window_info::complete_create()
 	// Make sure we have a consistent state
 	SDL_ShowCursor(0);
 	SDL_ShowCursor(1);
+	SDL_EnableScreenSaver();
 
 	return 0;
 }
