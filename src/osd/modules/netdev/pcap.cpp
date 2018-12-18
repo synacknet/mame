@@ -206,7 +206,7 @@ int netdev_pcap::send(uint8_t *buf, int len)
 		return 0;
 	}
 	ret = (*module->pcap_sendpacket_dl)(m_p, buf, len);
-	printf("sent packet length %d, returned %d\n", len, ret);
+	//printf("sent packet length %d, returned %d\n", len, ret);
 	return ret ? len : 0;
 	//return (!pcap_sendpacket_dl(m_p, buf, len))?len:0;
 }
