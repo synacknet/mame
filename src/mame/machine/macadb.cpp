@@ -714,8 +714,8 @@ void mac_state::mac_adb_newaction(int state)
 						// bit to indicate srq.
 						if((m_adb_datasize == 0) && m_adb_srqflag)
 						{
-								m_adb_irq_pending = 1;
-								m_adb_srqflag = 0;
+							m_adb_irq_pending = 1;
+							m_adb_srqflag = 0;
 						}
 					}
 
@@ -1146,11 +1146,11 @@ void mac_state::adb_vblank()
 			#endif
 			else
 			{
-				m_adb_irq_pending = 1;
-				m_adb_command = m_adb_send = 0;
-				m_adb_timer_ticks = 1;  // one tick should be sufficient to make it see  the IRQ
-				this->m_adb_timer->adjust(attotime(0, ATTOSECONDS_IN_USEC(100)));
+				m_adb_waiting_cmd = 1;
 				m_adb_srq_switch = 1;
+				this->adb_talk();
+				m_adb_timer_ticks = 8;
+				this->m_adb_timer->adjust(attotime(0, ATTOSECONDS_IN_USEC(100)));
 			}
 		}
 		else if (this->adb_pollkbd(0))
@@ -1160,7 +1160,6 @@ void mac_state::adb_vblank()
 				// repeat last TALK to get updated data
 				m_adb_waiting_cmd = 1;
 				this->adb_talk();
-
 				m_adb_timer_ticks = 8;
 				this->m_adb_timer->adjust(attotime(0, ATTOSECONDS_IN_USEC(100)));
 			}
@@ -1176,11 +1175,11 @@ void mac_state::adb_vblank()
 			#endif
 			else
 			{
-				m_adb_irq_pending = 1;
-				m_adb_command = m_adb_send = 0;
-				m_adb_timer_ticks = 1;  // one tick should be sufficient to make it see  the IRQ
-				this->m_adb_timer->adjust(attotime(0, ATTOSECONDS_IN_USEC(100)));
+				m_adb_waiting_cmd = 1;
 				m_adb_srq_switch = 1;
+				this->adb_talk();
+				m_adb_timer_ticks = 8;
+				this->m_adb_timer->adjust(attotime(0, ATTOSECONDS_IN_USEC(100)));
 			}
 		}
 	}
