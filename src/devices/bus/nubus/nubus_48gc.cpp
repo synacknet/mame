@@ -42,11 +42,11 @@ DEFINE_DEVICE_TYPE(NUBUS_824GC, nubus_824gc_device, "nb_824gc", "Apple 8*24 vide
 MACHINE_CONFIG_START(jmfb_device::device_add_mconfig)
 	MCFG_SCREEN_ADD(GC48_SCREEN_NAME, RASTER)
 	MCFG_SCREEN_UPDATE_DEVICE(DEVICE_SELF, jmfb_device, screen_update)
-	MCFG_SCREEN_RAW_PARAMS(25175000, 800, 0, 640, 525, 0, 480)
-//  MCFG_SCREEN_SIZE(1152, 870)
-//  MCFG_SCREEN_VISIBLE_AREA(0, 1152-1, 0, 870-1)
-//  MCFG_SCREEN_REFRESH_RATE(75)
-//  MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(1260))
+	//MCFG_SCREEN_RAW_PARAMS(25175000, 800, 0, 640, 525, 0, 480)
+  MCFG_SCREEN_SIZE(1152, 870)
+  MCFG_SCREEN_VISIBLE_AREA(0, 1152-1, 0, 870-1)
+  MCFG_SCREEN_REFRESH_RATE(75.08)
+  MCFG_SCREEN_VBLANK_TIME(ATTOSECONDS_IN_USEC(1260))
 MACHINE_CONFIG_END
 
 //-------------------------------------------------
@@ -124,11 +124,11 @@ void jmfb_device::device_reset()
 	m_clutoffs = 0;
 	m_count = 0;
 	m_vbl_disable = 1;
-	m_stride = 80;
-	m_base = 0;
-	m_xres = 640;
-	m_yres = 480;
-	m_mode = 0;
+	m_base = 128;
+	m_xres = 1152;
+	m_yres = 870;
+	m_mode = 3;
+	m_stride = m_xres;
 	memset(&m_vram[0], 0, VRAM_SIZE);
 	memset(m_palette, 0, sizeof(m_palette));
 }
@@ -146,7 +146,7 @@ void jmfb_device::device_timer(emu_timer &timer, device_timer_id tid, int param,
 		raise_slot_irq();
 	}
 
-	m_timer->adjust(m_screen->time_until_pos(479, 0), 0);
+	m_timer->adjust(m_screen->time_until_pos(m_yres-1, 0), 0);
 }
 
 uint32_t jmfb_device::screen_update(screen_device &screen, bitmap_rgb32 &bitmap, const rectangle &cliprect)
@@ -160,10 +160,10 @@ uint32_t jmfb_device::screen_update(screen_device &screen, bitmap_rgb32 &bitmap,
 	if (!m_screen)
 	{
 		m_screen = &screen;
-		m_timer->adjust(m_screen->time_until_pos(479, 0), 0);
+		m_timer->adjust(m_screen->time_until_pos(m_yres-1, 0), 0);
 	}
 
-	vram8 += 0xa00;
+	vram8 += m_base;
 
 	switch (m_mode)
 	{
@@ -254,12 +254,12 @@ WRITE32_MEMBER( jmfb_device::mac_48gc_w )
 	switch (offset)
 	{
 		case 0x8/4: // base
-//          printf("%x to base\n", data);
+			//printf("%x to base\n", data);
 			m_base = (data*2)<<4;
 			break;
 
 		case 0xc/4: // stride
-//          printf("%x to stride\n", data);
+			//printf("%x to stride\n", data);
 			// this value is in DWORDs for 1-8 bpp and, uhh, strange for 24bpp
 			if (m_mode < 4)
 			{
@@ -272,7 +272,7 @@ WRITE32_MEMBER( jmfb_device::mac_48gc_w )
 			break;
 
 		case 0x200/4:   // DAC control
-//          printf("%08x to DAC control\n", data);
+			// printf("%08x to DAC control\n", data);
 			if (m_is824)
 			{
 				m_clutoffs = data&0xff;
@@ -296,7 +296,7 @@ WRITE32_MEMBER( jmfb_device::mac_48gc_w )
 
 			if (m_count == 3)
 			{
-//              printf("RAMDAC: color %d = %02x %02x %02x\n", m_clutoffs, m_colors[0], m_colors[1], m_colors[2]);
+				//printf("RAMDAC: color %d = %02x %02x %02x\n", m_clutoffs, m_colors[0], m_colors[1], m_colors[2]);
 				m_palette[m_clutoffs] = rgb_t(m_colors[0], m_colors[1], m_colors[2]);
 				m_clutoffs++;
 				m_count = 0;
@@ -323,7 +323,7 @@ WRITE32_MEMBER( jmfb_device::mac_48gc_w )
 					}
 				}
 			}
-//          printf("%02x to mode (m_mode = %d)\n", data, m_mode);
+			//printf("%02x to mode (m_mode = %d)\n", data, m_mode);
 			break;
 
 		case 0x13c/4:   // bit 1 = VBL disable (1=no interrupts)
@@ -349,8 +349,9 @@ READ32_MEMBER( jmfb_device::mac_48gc_r )
 	switch (offset)
 	{
 		case 0:
-			return 0x0c00;  // sense 13" RGB for now
-//          return 0x0000;  // sense "RGB Kong" monitor
+//			return 0x0c00;  // sense 13" RGB for now
+			// M3502 Macintosh 21-in Color Display
+			return 0x0000;  // sense "RGB Kong" monitor
 
 		case 0x1c0/4:
 			m_toggle ^= 0xffffffff;
