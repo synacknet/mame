@@ -223,6 +223,11 @@ void nubus_image_device::device_reset()
 
 WRITE32_MEMBER( nubus_image_device::mousepos_w )
 {
+	if(data) {
+		SDL_ShowCursor(1);
+	} else {
+		SDL_ShowCursor(0);
+	}
 }
 
 READ32_MEMBER( nubus_image_device::mousepos_r )
@@ -232,7 +237,6 @@ READ32_MEMBER( nubus_image_device::mousepos_r )
 	bool m_mouse_button;
 	// There doesn't seem to be a way to explicitly hide
 	// the cursor using mame classes.
-	SDL_ShowCursor(0);
 	machine().ui_input().find_mouse(&x, &y, &m_mouse_button);
 	ret = ((x&0xffff) << 16) | (y&0xffff);
 
@@ -286,30 +290,9 @@ WRITE32_MEMBER( nubus_image_device::file_cmd_w )
 	filectx.curcmd = data;
 	switch(data) {
 	case kFileCmdGetDir:
-		strcpy((char*)filectx.filename, (char*)filectx.curdir);
-		break;
 	case kFileCmdSetDir:
-		if ((filectx.filename[0] == '/') || (filectx.filename[0] == '$')) {
-			strcpy((char*)filectx.curdir, (char*)filectx.filename);
-		} else {
-			strcat((char*)filectx.curdir, "/");
-			strcat((char*)filectx.curdir, (char*)filectx.filename);
-		}
-		break;
 	case kFileCmdGetFirstListing:
-		filectx.dirp = osd::directory::open((const char *)filectx.curdir);
 	case kFileCmdGetNextListing:
-		if (filectx.dirp) {
-			osd::directory::entry const *const dp = filectx.dirp->read();
-			if(dp) {
-				strncpy((char*)filectx.filename, dp->name, sizeof(filectx.filename));
-			} else {
-				memset(filectx.filename, 0, sizeof(filectx.filename));
-			}
-		}
-		else {
-			memset(filectx.filename, 0, sizeof(filectx.filename));
-		}
 		break;
 	case kFileCmdGetFile:
 		{
