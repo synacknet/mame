@@ -461,7 +461,7 @@ void mac_state::set_memory_overlay(int overlay)
 		}
 		else if ((m_model >= MODEL_MAC_II) && (m_model <= MODEL_MAC_SE30) && (m_model != MODEL_MAC_IIVX) && (m_model != MODEL_MAC_IIVI))
 		{
-			mac_install_memory(0x00000000, 0x3fffffff, memory_size, memory_data, is_rom, "bank1");
+			mac_install_memory(0x00000000, 0x00ffffff, memory_size, memory_data, is_rom, "bank1");
 		}
 		else if ((m_model == MODEL_MAC_IIVX) || (m_model == MODEL_MAC_IIVI) || (m_model == MODEL_MAC_LC_III) || (m_model == MODEL_MAC_LC_III_PLUS) || (m_model >= MODEL_MAC_LC_475 && m_model <= MODEL_MAC_LC_580))   // up to 36 MB
 		{
