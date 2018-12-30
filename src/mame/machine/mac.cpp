@@ -1877,9 +1877,6 @@ TIMER_CALLBACK_MEMBER(mac_state::mac_6015_tick)
 
 void mac_state::machine_start()
 {
-	if(m_romsimm && (m_romsimm->get_rom_size() > 0)) {
-		mac_install_memory(0x40000000, 0x407fffff, m_romsimm->get_rom_size(), m_romsimm->get_rom_base(), true, "bank1");
-	}
 	if (has_adb())
 	{
 		this->m_adb_timer = machine().scheduler().timer_alloc(timer_expired_delegate(FUNC(mac_state::mac_adb_tick),this));

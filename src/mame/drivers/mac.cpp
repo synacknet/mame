@@ -659,7 +659,7 @@ void mac_state::macii_map(address_map &map)
 	map(0x40000000, 0x4003ffff).rom().region("bootrom", 0).mirror(0x0ffc0000);
 
 	// MMU remaps I/O without the F
-	map(0x50000000, 0x50001fff).rw(FUNC(mac_state::mac_via_r), FUNC(mac_state::mac_via_w)).mirror(0x00f00000);
+	map(0x50000000, 0x50001fff).rw(FUNC(mac_state::mac_via_r), FUNC(mac_state::mac_via_w)).mirror(0x00f20000);
 	map(0x50002000, 0x50003fff).rw(FUNC(mac_state::mac_via2_r), FUNC(mac_state::mac_via2_w)).mirror(0x00f00000);
 	map(0x50004000, 0x50005fff).rw(FUNC(mac_state::mac_scc_r), FUNC(mac_state::mac_scc_2_w)).mirror(0x00f00000);
 	map(0x50006000, 0x50006003).w(FUNC(mac_state::macii_scsi_drq_w)).mirror(0x00f00000);
@@ -1132,6 +1132,19 @@ template <typename T> void mac_state::add_nubus_pds(machine_config &config, cons
 	NUBUS_SLOT(config, slot_tag, "pds", std::forward<T>(opts), nullptr);
 }
 
+DEVICE_IMAGE_LOAD_MEMBER(mac_state, romsimm)
+{
+	m_romsimm->rom_alloc(image.length(), GENERIC_ROM32_WIDTH, ENDIANNESS_BIG);
+	m_romsimm->common_load_rom(m_romsimm->get_rom_base(), image.length(), "rom");
+	// Endian macros do not seem to do anything, and the default
+	// is to load everything byteswapped.
+	for(uint32_t *i = (uint32_t*)m_romsimm->get_rom_base(); i < (uint32_t*)(m_romsimm->get_rom_base() + image.length()); i++) {
+		*i = ntohl(*i);
+	}
+	mac_install_memory(0x40000000, 0x04fffffff, image.length(), m_romsimm->get_rom_base(), true, "bootrom");
+	return image_init_result::PASS;
+}
+
 void mac_state::macplus(machine_config &config)
 {
 	mac512ke_base(config);
@@ -1385,6 +1398,13 @@ void mac_state::maciix(machine_config &config, bool nubus_bank1, bool nubus_bank
 
 	m_ram->set_default_size("2M");
 	m_ram->set_extra_options("8M,32M,64M,96M,128M");
+
+	device_t* device;
+	MCFG_GENERIC_CARTSLOT_ADD("cardslot", generic_plain_slot, "romsimm")
+	MCFG_GENERIC_EXTENSIONS("rom,bin")
+	MCFG_GENERIC_WIDTH(GENERIC_ROM32_WIDTH)
+	MCFG_GENERIC_ENDIAN(ENDIANNESS_BIG)
+	MCFG_GENERIC_LOAD(mac_state, romsimm)
 }
 
 void mac_state::maciicx(machine_config &config)    // IIcx is a IIx with only slots 9/a/b
@@ -1548,19 +1568,6 @@ void mac_state::macclas2(machine_config &config)
 	m_ram->set_extra_options("2M,4M,6M,8M,10M");
 
 	m_egret->set_type(EGRET_341S0851);
-}
-
-DEVICE_IMAGE_LOAD_MEMBER(mac_state, romsimm)
-{
-	m_romsimm->rom_alloc(image.length(), GENERIC_ROM32_WIDTH, ENDIANNESS_BIG);
-	m_romsimm->common_load_rom(m_romsimm->get_rom_base(), image.length(), "rom");
-	// Endian macros do not seem to do anything, and the default
-	// is to load everything byteswapped.
-	for(uint32_t *i = (uint32_t*)m_romsimm->get_rom_base(); i < (uint32_t*)(m_romsimm->get_rom_base() + image.length()); i++) {
-		*i = ntohl(*i);
-	}
-	mac_install_memory(0x40800000, 0x40800000 + image.length()-1, image.length(), m_romsimm->get_rom_base(), true, "bootrom");
-	return image_init_result::PASS;
 }
 
 void mac_state::maciici(machine_config &config)
