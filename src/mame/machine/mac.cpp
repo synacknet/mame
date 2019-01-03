@@ -461,7 +461,16 @@ void mac_state::set_memory_overlay(int overlay)
 		}
 		else if ((m_model >= MODEL_MAC_II) && (m_model <= MODEL_MAC_SE30) && (m_model != MODEL_MAC_IIVX) && (m_model != MODEL_MAC_IIVI))
 		{
-			mac_install_memory(0x00000000, 0x00ffffff, memory_size, memory_data, is_rom, "bank1");
+			if(overlay) {
+				// GTTMFH2e p244
+				mac_install_memory(0x00000000, 0x00ffffff, memory_size, memory_data, is_rom, "bank1");
+			} else {
+				address_space& space = m_maincpu->space(AS_PROGRAM);
+				space.install_readwrite_bank(0x000000000, memory_size-1, 0x38000000, "bank1");
+				membank("bank1")->set_base(memory_data);
+				//mac_install_memory(0x00000000, memory_size-1, memory_size, memory_data, is_rom, "bank1");
+				//m_maincpu->space(AS_PROGRAM).install_read_handler(memory_size, 0x07ffffff, read32_delegate(FUNC(mac_state::buserror_r), this));
+			}
 		}
 		else if ((m_model == MODEL_MAC_IIVX) || (m_model == MODEL_MAC_IIVI) || (m_model == MODEL_MAC_LC_III) || (m_model == MODEL_MAC_LC_III_PLUS) || (m_model >= MODEL_MAC_LC_475 && m_model <= MODEL_MAC_LC_580))   // up to 36 MB
 		{
@@ -1478,7 +1487,8 @@ WRITE8_MEMBER(mac_state::mac_via_out_a)
 	/* Early Mac models had VIA A4 control overlaying.  In the Mac SE (and
 	 * possibly later models), overlay was set on reset, but cleared on the
 	 * first access to the ROM. */
-	if (m_model < MODEL_MAC_SE)
+	// and II, IIx, IIcx, and SE/30
+	if ((m_model < MODEL_MAC_SE) || ((m_model >= MODEL_MAC_II) && (m_model <= MODEL_MAC_SE30)))
 	{
 		set_memory_overlay((data & 0x10) >> 4);
 	}
@@ -2170,7 +2180,7 @@ void mac_state::mac_driver_init(model_t model)
 	memset(m_ram->pointer(), 0, m_ram->size());
 
 	if ((model == MODEL_MAC_SE) || (model == MODEL_MAC_CLASSIC) || (model == MODEL_MAC_CLASSIC_II) || (model == MODEL_MAC_LC) || (model == MODEL_MAC_COLOR_CLASSIC) || (model >= MODEL_MAC_LC_475 && model <= MODEL_MAC_LC_580) ||
-		(model == MODEL_MAC_LC_II) || (model == MODEL_MAC_LC_III) || (model == MODEL_MAC_LC_III_PLUS) || ((m_model >= MODEL_MAC_II) && (m_model <= MODEL_MAC_SE30)) ||
+		(model == MODEL_MAC_LC_II) || (model == MODEL_MAC_LC_III) || (model == MODEL_MAC_LC_III_PLUS) ||
 		(model == MODEL_MAC_PORTABLE) || (model == MODEL_MAC_PB100) || (model == MODEL_MAC_PB140) || (model == MODEL_MAC_PB160) || (model == MODEL_MAC_PBDUO_210) || (model >= MODEL_MAC_QUADRA_700 && model <= MODEL_MAC_QUADRA_800))
 	{
 		m_overlay_timeout = machine().scheduler().timer_alloc(timer_expired_delegate(FUNC(mac_state::overlay_timeout_func),this));
